@@ -1,0 +1,132 @@
+:root {
+  /* Dict Nord Dark - Baseado no tema Nord */
+  --bg-primary: #2e3440;
+  --bg-secondary: #3b4252;
+  --bg-tertiary: #434c5e;
+  --text-primary: #eceff4;
+  --text-secondary: #d8dee9;
+  --accent: #88c0d0;
+  --accent-hover: #81a1c1;
+  --accent-glow: rgba(136, 192, 208, 0.2);
+  --border: #4c566a;
+  --editor-bg: #2e3440;
+  --preview-bg: #2e3440;
+  --scrollbar-bg: #2e3440;
+  --scrollbar-thumb: #4c566a;
+  --scrollbar-thumb-hover: #616e88;
+  --line-number: #616e88;
+  --selection: rgba(136, 192, 208, 0.3);
+  --hover-bg: #434c5e;
+  --active-item: #4c566a;
+  --title-bar-bg: #2e3440;
+  --toolbar-bg: #2e3440;
+  --status-bar-bg: #5e81ac;
+  --sidebar-bg: #3b4252;
+  --tab-active-bg: #2e3440;
+  --tab-inactive-bg: #3b4252;
+  --code-bg: #434c5e;
+  --mermaid-bg: #3b4252;
+  /* Nord palette extras */
+  --nord-red: #bf616a;
+  --nord-orange: #d08770;
+  --nord-yellow: #ebcb8b;
+  --nord-green: #a3be8c;
+  --nord-purple: #b48ead;
+}
+
+[data-theme="dict-light"] {
+  /* Dict Light - Tema claro suave */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #e8e8e8;
+  --text-primary: #4a5568;
+  --text-secondary: #718096;
+  --accent: #5a8ea3;
+  --accent-hover: #4a7a91;
+  --accent-glow: rgba(90, 142, 163, 0.15);
+  --border: #e2e8f0;
+  --editor-bg: #ffffff;
+  --preview-bg: #ffffff;
+  --scrollbar-bg: #f5f5f5;
+  --scrollbar-thumb: #cbd5e0;
+  --scrollbar-thumb-hover: #a0aec0;
+  --line-number: #a0aec0;
+  --selection: rgba(90, 142, 163, 0.2);
+  --hover-bg: #f0f4f8;
+  --active-item: #e2e8f0;
+  --title-bar-bg: #f5f5f5;
+  --toolbar-bg: #ffffff;
+  --status-bar-bg: #6b9ac4;
+  --sidebar-bg: #f5f5f5;
+  --tab-active-bg: #ffffff;
+  --tab-inactive-bg: #f0f4f8;
+  --code-bg: #edf2f7;
+  --mermaid-bg: #f5f5f5;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  overflow: hidden;
+  height: 100vh;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbar customizada */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--scrollbar-bg);
+}
+
+/* Glow effect para elementos ativos */
+.btn-primary,
+.toolbar-btn.active,
+.theme-option.active {
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* Botões secundários e danger */
+.btn-secondary {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background-color: var(--hover-bg);
+  border-color: var(--accent);
+}
+
+/* Transições suaves */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}

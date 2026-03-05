@@ -1,0 +1,1272 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { ActivityBar } from './components/ActivityBar';
+import { Sidebar } from './components/Sidebar';
+import { EditorToolbar } from './components/EditorToolbar';
+import { TextEditor } from './components/TextEditor';
+import { Preview } from './components/Preview';
+import { StatusBar } from './components/StatusBar';
+import { Tabs } from './components/Tabs';
+import { ContextMenu } from './components/ContextMenu';
+import { SettingsPanel } from './components/SettingsPanel';
+import { ConfirmModal } from './components/ConfirmModal';
+import { ChangelogModal } from './components/ChangelogModal';
+import { EmojiPickerComponent } from './components/EmojiPicker';
+import './styles/global.css';
+import './styles/layout.css';
+
+interface FileData {
+  id: string;
+  name: string;
+  type: 'file' | 'folder';
+  content: string;
+}
+
+interface Tab {
+  id: string;
+  fileId: string;
+  name: string;
+  content: string;
+  isDirty: boolean;
+}
+
+interface ContextMenuState {
+  visible: boolean;
+  x: number;
+  y: number;
+  target: 'explorer' | 'editor' | 'preview' | null;
+  fileId?: string;
+}
+
+const DEFAULT_CONTENT = `# Bem-vindo ao dict
+
+Este é um editor de texto Markdown com suporte a diagramas Mermaid, visual similar ao VS Code e suporte a temas.
+
+## Recursos
+
+- **Editor de Markdown** com preview em tempo real
+- **Diagramas Mermaid** para visualização de gráficos
+- **Temas** claro e escuro
+- **Layout estilo VS Code**
+- **Abas** para múltiplos arquivos
+- **Menu de contexto** customizado
+
+## Exemplo de Markdown
+
+### Negrito e Itálico
+Este é um texto em **negrito** e este em *itálico*.
+
+### Código
+Use \`código inline\` ou blocos de código:
+
+\`\`\`javascript
+function hello() {
+  console.log("Hello, World!");
+}
+\`\`\`
+
+### Listas
+
+- Item 1
+- Item 2
+- Item 3
+
+### Links
+[Visite o GitHub](https://github.com)
+
+### Tabelas
+
+| Nome | Idade | Cidade |
+|------|-------|--------|
+| João | 25    | São Paulo |
+| Maria | 30   | Rio de Janeiro |
+
+## Diagramas Mermaid
+
+Você pode criar diagramas Mermaid usando blocos de código com a linguagem \`mermaid\`:
+
+\`\`\`mermaid
+graph TD
+    A[Início] --> B{Decisão}
+    B -->|Sim| C[Ação 1]
+    B -->|Não| D[Ação 2]
+    C --> E[Fim]
+    D --> E
+\`\`\`
+
+### Fluxograma
+
+\`\`\`mermaid
+flowchart LR
+    A[Cliente] -->|Solicitação| B[Servidor]
+    B -->|Resposta| A
+    B --> C[Banco de Dados]
+    C -->|Dados| B
+\`\`\`
+
+### Gráfico de Sequência
+
+\`\`\`mermaid
+sequenceDiagram
+    participant A as Cliente
+    participant B as API
+    participant C as Banco
+    A->>B: Requisição
+    B->>C: Query
+    C-->>B: Dados
+    B-->>A: Resposta
+\`\`\`
+
+### Gráfico de Pizza
+
+\`\`\`mermaid
+pie
+    "Chrome" : 60
+    "Firefox" : 20
+    "Safari" : 15
+    "Outros" : 5
+\`\`\`
+
+---
+
+**Dica:** Use os atalhos de teclado para formatar seu texto mais rapidamente!
+`;
+
+const CHANGELOG = `## Versão 0.0.4 - Emojis, Submenus e Melhorias de UX
+
+### Novas Funcionalidades
+
+#### Suporte a Emojis
+- Picker de emojis com busca e categorias
+- +400 emojis comuns disponíveis
+- Shortcodes no formato :emoji: (ex: :joy:, :smile:)
+- Emojis aparecem apenas no preview, não no editor
+- Categorias: Smileys, Pessoas, Animais, Comida, Atividades, Viagem
+- Botão "Emoji" na toolbar para acesso rápido
+
+#### Submenus na Toolbar
+- **Títulos**: H1, H2, H3 com um clique
+- **Mermaid**: 7 tipos de diagramas com exemplos prontos:
+  - Flowchart (Fluxograma)
+  - Sequence (Sequência)
+  - Class (Classes)
+  - Pie (Pizza)
+  - Gantt (Timeline)
+  - ER (Entidade Relacionamento)
+  - Journey (Jornada do Usuário)
+
+#### Menu de Contexto do Preview
+- Menu customizado para o preview
+- Opções: Selecionar Tudo, Copiar
+- Diferente do menu do editor (foco em visualização)
+
+#### Persistência de Estado
+- Sidebar salva estado (aberto/fechado) no localStorage
+- Recarregue a página e o estado é mantido
+
+#### Modal de Confirmação Customizado
+- Design minimalista seguindo o tema Dict Nord
+- Confirmação para fechar arquivos
+- Sem modais nativos do browser
+
+### Melhorias de UX
+
+#### Atalhos de Teclado
+- **ESC**: Fecha qualquer modal (Settings, Changelog, Emoji Picker, Confirmação)
+- **Ctrl+,**: Alterna painel de configurações (abre/fecha)
+- **Ctrl+Z**: Desfazer última alteração (undo)
+- Ícone de configurações destaca quando aberto
+
+#### Interface
+- Titlebar removida para layout mais limpo
+- Botão "×" para fechar arquivos no explorador
+- Fundo da sidebar corrigido (sem áreas escuras)
+- Scrollbar do preview não interfere mais ao digitar
+
+#### Identidade Visual
+- Tema Dict Nord (azul-acinzentado)
+- Tema Dict Light (claro suave)
+- Favicon com "d" minúsculo
+- Cores consistentes em todos os componentes
+
+### Correções
+- Diagramas Mermaid ER e Class funcionando
+- Auto-save sem loop infinito
+- Linha/coluna atualizando em tempo real
+- Submenus não fecham ao clicar
+
+---
+
+## Versão 0.0.3 - Auto-save, Syntax Highlighting e Identidade Visual
+
+### Novas Funcionalidades
+
+#### Auto-save
+- Salvamento automático no localStorage
+- Recupera arquivos ao reabrir o aplicativo
+- Botão "Auto-save" na toolbar para ativar/desativar
+- Indicador visual de salvamento na barra de status
+- Dirty indicator (bolinha azul) some ao salvar
+- Mensagens: "Salvo agora", "Salvo há Xs", "Salvo há Xmin"
+
+#### Contagem de Palavras
+- Exibição de contagem de palavras na barra de status
+- Contagem em tempo real enquanto digita
+- Métricas: palavras, caracteres, linhas
+
+#### Realce de Sintaxe
+- Highlight.js integrado para blocos de código
+- Suporte a múltiplas linguagens (JavaScript, Python, CSS, HTML, etc.)
+- Tema Atom One Dark para melhor legibilidade
+- Detecção automática de linguagem
+
+#### Identidade Visual Dict
+- Novo tema "Dict Nord" - Tema escuro inspirado no Nord (tons de azul-acinzentado)
+- Novo tema "Dict Light" - Tema claro suave
+- Cores customizadas em todos os componentes
+- Efeitos de glow em elementos ativos
+- Transições suaves entre estados
+- Novo favicon com cores Nord (fundo azul #5e81ac)
+- StatusBar com cor de destaque
+- Títulos e links com cor accent
+- Persistência do tema selecionado no localStorage
+
+### Melhorias Técnicas
+- Preview com debounce de 500ms
+- Scroll sync otimizado
+- Lazy initialization do estado
+- Custom renderer para Markdown
+- Integração com Mermaid mantida
+
+### Correções
+- Scrollbar do preview não se mexe mais ao digitar
+- Auto-save sem loop infinito
+- Dirty indicator atualizado corretamente
+
+---
+
+## Versão 0.0.2 - Sincronização de Scroll
+
+### Novas Funcionalidades
+
+#### Sincronização de Scroll
+- Scroll sincronizado entre editor e preview
+- Botão "Sync Scroll" na toolbar para ativar/desativar
+- Rolagem simultânea em ambos os painéis no modo split
+- Algoritmo de sincronização baseado em porcentagem
+
+#### Melhorias de Interface
+- Removido seletor de tema da toolbar principal
+- Tema agora acessível apenas pelo painel de Configurações
+- Toolbar mais limpa e focada em edição
+
+### Correções
+- Sincronização de scroll bidirecional totalmente revisada
+- Prevenção de conflitos de scroll entre painéis
+- Correção do canto das scrollbars (scrollbar corner)
+- Melhoria na renderização de diagramas Mermaid
+- Validação de sintaxe Mermaid com mensagens de erro claras
+- Suporte a tema claro/escuro nos diagramas Mermaid
+
+---
+
+## Versão 0.0.1 - Lançamento Inicial
+
+### Funcionalidades Implementadas
+
+#### Editor
+- Editor de texto Markdown com numeração de linhas
+- Preview em tempo real do conteúdo renderizado
+- Suporte a diagramas Mermaid (fluxograma, sequência, pizza, etc.)
+- Sistema de abas para múltiplos arquivos abertos
+- Detecção de alterações não salvas (dirty state)
+
+#### Interface
+- Layout inspirado no VS Code
+- Activity bar lateral simplificada
+- Sidebar com explorador de arquivos
+- Barra de status com informações do arquivo
+- Sistema de temas (Escuro, Claro, Escuro Moderno)
+- Menu de contexto customizado (botão direito)
+
+#### Gerenciamento de Arquivos
+- Criar novos arquivos
+- Abrir arquivos .md do sistema
+- Salvar arquivos (download)
+- Renomear arquivos
+- Duplicar arquivos
+- Fechar arquivos
+
+#### Atalhos de Teclado
+- Ctrl+B: Negrito
+- Ctrl+I: Itálico
+- Ctrl+H: Título
+- Ctrl+K: Código inline
+- Ctrl+L: Link
+- Ctrl+U: Lista
+- Ctrl+S: Salvar
+- Ctrl+\\: Alternar modo de visualização
+- Ctrl+Shift+E: Alternar explorador
+
+#### Configurações
+- Painel de configurações estilo VS Code
+- Seletor de temas
+- Lista de atalhos de teclado
+- Changelog da versão
+- Informações sobre o aplicativo`;
+
+function App() {
+  const [theme, setTheme] = useState(() => {
+    const savedTheme = localStorage.getItem('dict-theme');
+    return savedTheme || 'dict-nord';
+  });
+  const [viewMode, setViewMode] = useState<'split' | 'editor' | 'preview'>('split');
+  const [activeView, setActiveView] = useState<'explorer' | ''>(() => {
+    // Carregar estado do sidebar do localStorage
+    const savedView = localStorage.getItem('dict-sidebar');
+    console.log('[Sidebar] Estado carregado do localStorage:', savedView);
+    // Se não tem nada salvo, usa 'explorer', senão usa o valor salvo
+    return savedView !== null ? savedView as 'explorer' | '' : 'explorer';
+  });
+  const [showSettings, setShowSettings] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(false);
+  const [syncScroll, setSyncScroll] = useState(true);
+  const [scrollPercentage, setScrollPercentage] = useState(0);
+  const [scrollSource, setScrollSource] = useState<'editor' | 'preview' | null>(null);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [emojiPickerPosition, setEmojiPickerPosition] = useState({ x: 0, y: 0 });
+  const [headingMenuOpen, setHeadingMenuOpen] = useState(false);
+  const [mermaidMenuOpen, setMermaidMenuOpen] = useState(false);
+  const [headingMenuPosition, setHeadingMenuPosition] = useState({ x: 0, y: 0 });
+  const [mermaidMenuPosition, setMermaidMenuPosition] = useState({ x: 0, y: 0 });
+  // Undo/Redo history
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const MAX_HISTORY = 50;
+  // Confirm modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalData, setConfirmModalData] = useState<{ fileId: string; fileName: string } | null>(null);
+  const [files, setFiles] = useState<FileData[]>(() => {
+    // Lazy initialization - carrega do localStorage no estado inicial
+    const savedFiles = localStorage.getItem('dict-files');
+    if (savedFiles) {
+      try {
+        const parsed = JSON.parse(savedFiles);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error('Erro ao carregar arquivos salvos:', e);
+      }
+    }
+    return [{ id: '1', name: 'Bem-vindo.md', type: 'file', content: DEFAULT_CONTENT }];
+  });
+  const [tabs, setTabs] = useState<Tab[]>(() => {
+    const savedFiles = localStorage.getItem('dict-files');
+    if (savedFiles) {
+      try {
+        const parsed = JSON.parse(savedFiles);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const firstFile = parsed[0];
+          return [{
+            id: `tab-${firstFile.id}`,
+            fileId: firstFile.id,
+            name: firstFile.name,
+            content: firstFile.content,
+            isDirty: false
+          }];
+        }
+      } catch (e) {
+        console.error('Erro ao carregar arquivos salvos:', e);
+      }
+    }
+    return [{ id: 'tab-1', fileId: '1', name: 'Bem-vindo.md', content: DEFAULT_CONTENT, isDirty: false }];
+  });
+  const [activeTabId, setActiveTabId] = useState<string>(() => {
+    const savedFiles = localStorage.getItem('dict-files');
+    if (savedFiles) {
+      try {
+        const parsed = JSON.parse(savedFiles);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return `tab-${parsed[0].id}`;
+        }
+      } catch (e) {
+        console.error('Erro ao carregar arquivos salvos:', e);
+      }
+    }
+    return 'tab-1';
+  });
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>({
+    visible: false,
+    x: 0,
+    y: 0,
+    target: null,
+    fileId: undefined
+  });
+  const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
+
+  const editorRef = useRef<HTMLDivElement>(null);
+  const explorerRef = useRef<HTMLDivElement>(null);
+
+  const activeTab = tabs.find(t => t.id === activeTabId);
+  const activeFile = files.find(f => f.id === activeTab?.fileId);
+
+  // Marcar como carregamento inicial concluído
+  useEffect(() => {
+    setIsInitialLoad(false);
+  }, []);
+
+  // Auto-save: salvar arquivos no localStorage quando houver mudanças
+  useEffect(() => {
+    // Não salva no primeiro render (carregamento inicial)
+    if (isInitialLoad) return;
+
+    if (autoSaveEnabled && files.length > 0) {
+      localStorage.setItem('dict-files', JSON.stringify(files));
+      setLastSavedTime(new Date());
+      
+      // Marca como salvo (remove o dirty indicator)
+      setTabs(prev => prev.map(t => ({ ...t, isDirty: false })));
+    }
+  }, [files, autoSaveEnabled, isInitialLoad]);
+
+  // Aplicar tema e salvar no localStorage
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('dict-theme', theme);
+  }, [theme]);
+
+  // Salvar estado do sidebar no localStorage
+  useEffect(() => {
+    console.log('[Sidebar] Salvando estado:', activeView);
+    localStorage.setItem('dict-sidebar', activeView);
+    console.log('[Sidebar] Estado salvo no localStorage:', localStorage.getItem('dict-sidebar'));
+  }, [activeView]);
+
+  // Fechar menu de contexto e submenus ao clicar fora
+  useEffect(() => {
+    const handleClick = () => {
+      if (contextMenu.visible) {
+        setContextMenu(prev => ({ ...prev, visible: false }));
+      }
+      if (headingMenuOpen) {
+        setHeadingMenuOpen(false);
+      }
+      if (mermaidMenuOpen) {
+        setMermaidMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [contextMenu.visible, headingMenuOpen, mermaidMenuOpen]);
+
+  // Atalhos de teclado globais
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Fechar modais com ESC
+      if (e.key === 'Escape') {
+        if (showSettings) {
+          e.preventDefault();
+          setShowSettings(false);
+          return;
+        }
+        if (showChangelog) {
+          e.preventDefault();
+          setShowChangelog(false);
+          return;
+        }
+        if (showEmojiPicker) {
+          e.preventDefault();
+          setShowEmojiPicker(false);
+          return;
+        }
+        if (showConfirmModal) {
+          e.preventDefault();
+          setShowConfirmModal(false);
+          setConfirmModalData(null);
+          return;
+        }
+      }
+
+      // Alternar view mode (Ctrl+\)
+      if (e.ctrlKey && e.key === '\\') {
+        e.preventDefault();
+        setViewMode(prev => prev === 'split' ? 'editor' : 'split');
+      }
+
+      // Salvar (Ctrl+S)
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+
+      // Alternar sidebar (Ctrl+Shift+E)
+      if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+        e.preventDefault();
+        setActiveView(prev => prev === 'explorer' ? '' : 'explorer');
+      }
+
+      // Alternar configurações (Ctrl+,)
+      if (e.ctrlKey && e.key === ',') {
+        e.preventDefault();
+        setShowSettings(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showSettings, showChangelog, showEmojiPicker, showConfirmModal]);
+
+  // Calcular posição do cursor
+  const updateCursorPosition = useCallback(() => {
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    if (textarea) {
+      const text = textarea.value.substring(0, textarea.selectionStart);
+      const lines = text.split('\n');
+      const line = lines.length;
+      const column = lines[lines.length - 1].length + 1;
+      setCursorPosition({ line, column });
+    }
+  }, []);
+
+  // Atualizar posição do cursor periodicamente quando houver interação
+  useEffect(() => {
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const handleSelectionChange = () => {
+      updateCursorPosition();
+    };
+
+    textarea.addEventListener('click', handleSelectionChange);
+    textarea.addEventListener('keyup', handleSelectionChange);
+    textarea.addEventListener('select', handleSelectionChange);
+
+    return () => {
+      textarea.removeEventListener('click', handleSelectionChange);
+      textarea.removeEventListener('keyup', handleSelectionChange);
+      textarea.removeEventListener('select', handleSelectionChange);
+    };
+  }, [updateCursorPosition, activeTabId]);
+
+  // Abrir/criar aba para um arquivo
+  const openFileInTab = useCallback((fileId: string) => {
+    const file = files.find(f => f.id === fileId);
+    if (!file) return;
+
+    const existingTab = tabs.find(t => t.fileId === fileId);
+    if (existingTab) {
+      setActiveTabId(existingTab.id);
+    } else {
+      const newTab: Tab = {
+        id: `tab-${Date.now()}`,
+        fileId: file.id,
+        name: file.name,
+        content: file.content,
+        isDirty: false
+      };
+      setTabs(prev => [...prev, newTab]);
+      setActiveTabId(newTab.id);
+    }
+  }, [files, tabs]);
+
+  // Fechar aba
+  const closeTab = useCallback((tabId: string) => {
+    const tab = tabs.find(t => t.id === tabId);
+    if (!tab) return;
+
+    // Se há alterações não salvas, confirmar fechamento
+    if (tab.isDirty) {
+      const confirmClose = window.confirm(`O arquivo "${tab.name}" tem alterações não salvas. Deseja fechar mesmo assim?`);
+      if (!confirmClose) return;
+    }
+
+    const newTabs = tabs.filter(t => t.id !== tabId);
+    setTabs(newTabs);
+
+    if (activeTabId === tabId && newTabs.length > 0) {
+      setActiveTabId(newTabs[newTabs.length - 1].id);
+    } else if (newTabs.length === 0) {
+      setActiveTabId('');
+    }
+  }, [tabs, activeTabId]);
+
+  // Atualizar conteúdo da aba ativa
+  const handleContentChange = useCallback((newContent: string) => {
+    if (!activeTab) return;
+
+    // Adicionar ao histórico de undo
+    setHistory(prev => {
+      const newHistory = prev.slice(0, historyIndex + 1);
+      newHistory.push(activeTab.content);
+      if (newHistory.length > MAX_HISTORY) {
+        newHistory.shift();
+      }
+      return newHistory;
+    });
+    setHistoryIndex(prev => Math.min(prev + 1, MAX_HISTORY - 1));
+
+    setTabs(prev => prev.map(t =>
+      t.id === activeTabId
+        ? { ...t, content: newContent, isDirty: true }
+        : t
+    ));
+
+    setFiles(prev => prev.map(f =>
+      f.id === activeTab.fileId
+        ? { ...f, content: newContent }
+        : f
+    ));
+  }, [activeTab, activeTabId, historyIndex]);
+
+  // Função de Undo (Ctrl+Z)
+  const handleUndo = useCallback(() => {
+    if (historyIndex < 0 || !activeTab) return;
+
+    const previousContent = history[historyIndex];
+    setHistoryIndex(prev => prev - 1);
+
+    setTabs(prev => prev.map(t =>
+      t.id === activeTabId
+        ? { ...t, content: previousContent, isDirty: true }
+        : t
+    ));
+
+    setFiles(prev => prev.map(f =>
+      f.id === activeTab.fileId
+        ? { ...f, content: previousContent }
+        : f
+    ));
+  }, [history, historyIndex, activeTab, activeTabId]);
+
+  // Handler para atalho Ctrl+Z
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'z') {
+        e.preventDefault();
+        handleUndo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleUndo]);
+
+  // Novo arquivo
+  const handleNewFile = useCallback(() => {
+    const id = Date.now().toString();
+    const name = `novo-arquivo-${files.length + 1}.md`;
+    const newFile: FileData = {
+      id,
+      name,
+      type: 'file',
+      content: '# Novo Arquivo\n\nComece a escrever...'
+    };
+    setFiles(prev => [...prev, newFile]);
+    
+    const newTab: Tab = {
+      id: `tab-${id}`,
+      fileId: id,
+      name,
+      content: newFile.content,
+      isDirty: false
+    };
+    setTabs(prev => [...prev, newTab]);
+    setActiveTabId(newTab.id);
+  }, [files.length]);
+
+  // Abrir arquivo do sistema
+  const handleOpenFile = useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.md,.markdown,.txt';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const id = Date.now().toString();
+          const newFile: FileData = {
+            id,
+            name: file.name,
+            type: 'file',
+            content: event.target?.result as string
+          };
+          setFiles(prev => [...prev, newFile]);
+          
+          const newTab: Tab = {
+            id: `tab-${id}`,
+            fileId: id,
+            name: file.name,
+            content: newFile.content,
+            isDirty: false
+          };
+          setTabs(prev => [...prev, newTab]);
+          setActiveTabId(newTab.id);
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  }, []);
+
+  // Salvar arquivo
+  const handleSave = useCallback(() => {
+    if (!activeTab || !activeFile) return;
+    
+    const blob = new Blob([activeTab.content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = activeFile.name;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    // Marcar como salvo
+    setTabs(prev => prev.map(t => 
+      t.id === activeTabId ? { ...t, isDirty: false } : t
+    ));
+  }, [activeTab, activeFile, activeTabId]);
+
+  // Renomear arquivo
+  const handleRenameFile = useCallback((fileId: string, newName: string) => {
+    setFiles(prev => prev.map(f => 
+      f.id === fileId ? { ...f, name: newName } : f
+    ));
+    setTabs(prev => prev.map(t => 
+      t.fileId === fileId ? { ...t, name: newName } : t
+    ));
+  }, []);
+
+  // Duplicar arquivo
+  const handleDuplicateFile = useCallback((fileId: string) => {
+    const file = files.find(f => f.id === fileId);
+    if (!file) return;
+
+    const id = Date.now().toString();
+    const name = file.name.replace('.md', '-copy.md') || `${file.name}-copy`;
+    const newFile: FileData = {
+      id,
+      name,
+      type: 'file',
+      content: file.content
+    };
+    setFiles(prev => [...prev, newFile]);
+    
+    const newTab: Tab = {
+      id: `tab-${id}`,
+      fileId: id,
+      name,
+      content: file.content,
+      isDirty: false
+    };
+    setTabs(prev => [...prev, newTab]);
+    setActiveTabId(newTab.id);
+  }, [files]);
+
+  // Fechar arquivo
+  const handleCloseFile = useCallback((fileId: string) => {
+    const tabsToClose = tabs.filter(t => t.fileId === fileId);
+    tabsToClose.forEach(tab => closeTab(tab.id));
+  }, [tabs, closeTab]);
+
+  // Fechar arquivo do explorador
+  const handleCloseFileFromExplorer = useCallback((fileId: string) => {
+    const file = files.find(f => f.id === fileId);
+    if (!file) return;
+    
+    setConfirmModalData({ fileId, fileName: file.name });
+    setShowConfirmModal(true);
+  }, [files]);
+
+  // Confirmar fechamento do arquivo
+  const handleConfirmCloseFile = useCallback(() => {
+    if (!confirmModalData) return;
+    
+    const { fileId } = confirmModalData;
+    
+    // Fechar todas as tabs relacionadas a este arquivo
+    const tabsToClose = tabs.filter(t => t.fileId === fileId);
+    tabsToClose.forEach(tab => {
+      setTabs(prev => prev.filter(t => t.id !== tab.id));
+    });
+    
+    // Remover o arquivo da lista
+    setFiles(prev => prev.filter(f => f.id !== fileId));
+    
+    // Se o arquivo fechado era o ativo, selecionar outro
+    if (activeTabId && tabsToClose.some(t => t.id === activeTabId)) {
+      const remainingTabs = tabs.filter(t => t.fileId !== fileId);
+      if (remainingTabs.length > 0) {
+        setActiveTabId(remainingTabs[remainingTabs.length - 1].id);
+      } else {
+        setActiveTabId('');
+      }
+    }
+    
+    setShowConfirmModal(false);
+    setConfirmModalData(null);
+  }, [confirmModalData, tabs, activeTabId]);
+
+  // Ações do preview
+  const handlePreviewSelectAll = useCallback(() => {
+    const previewElement = document.querySelector('.preview-content') as HTMLElement;
+    if (previewElement) {
+      const range = document.createRange();
+      range.selectNodeContents(previewElement);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+  }, []);
+
+  const handlePreviewCopy = useCallback(() => {
+    const previewElement = document.querySelector('.preview-content') as HTMLElement;
+    if (previewElement) {
+      const text = previewElement.innerText;
+      navigator.clipboard.writeText(text);
+    }
+  }, []);
+
+  // Menu de contexto
+  const handleContextMenu = useCallback((e: React.MouseEvent, target: 'explorer' | 'editor' | 'preview', fileId?: string) => {
+    e.preventDefault();
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      target,
+      fileId
+    });
+  }, []);
+
+  // Inserir formatação no editor
+  const insertFormatting = useCallback((before: string, after: string) => {
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    if (!textarea || !activeTab) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = activeTab.content.substring(start, end);
+    const newContent = activeTab.content.substring(0, start) + before + selectedText + after + activeTab.content.substring(end);
+    handleContentChange(newContent);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.selectionStart = start + before.length;
+      textarea.selectionEnd = end + before.length;
+      updateCursorPosition();
+    }, 0);
+  }, [activeTab, handleContentChange, updateCursorPosition]);
+
+  const handleBold = () => insertFormatting('**', '**');
+  const handleItalic = () => insertFormatting('*', '*');
+  const handleCode = () => insertFormatting('`', '`');
+  const handleLink = () => insertFormatting('[', '](url)');
+  const handleList = () => insertFormatting('- ', '');
+
+  // Handlers para submenu de Heading
+  const handleHeadingMenu = (e: React.MouseEvent) => {
+    const button = (e.target as HTMLElement).closest('button');
+    if (button) {
+      const rect = button.getBoundingClientRect();
+      setHeadingMenuPosition({ x: rect.left, y: rect.bottom + 5 });
+      setHeadingMenuOpen(!headingMenuOpen);
+      setMermaidMenuOpen(false);
+    }
+  };
+
+  const handleHeading = (level: number) => {
+    const prefix = '#'.repeat(level) + ' ';
+    insertFormatting(prefix, '');
+    setHeadingMenuOpen(false);
+  };
+
+  // Handlers para submenu de Mermaid
+  const handleMermaidMenu = (e: React.MouseEvent) => {
+    const button = (e.target as HTMLElement).closest('button');
+    if (button) {
+      const rect = button.getBoundingClientRect();
+      setMermaidMenuPosition({ x: rect.left, y: rect.bottom + 5 });
+      setMermaidMenuOpen(!mermaidMenuOpen);
+      setHeadingMenuOpen(false);
+    }
+  };
+
+  const handleMermaid = (type: string) => {
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    if (!textarea || !activeTab) return;
+
+    const start = textarea.selectionStart;
+    let mermaidTemplate = '';
+
+    switch (type) {
+      case 'flowchart':
+        mermaidTemplate = `\n\`\`\`mermaid
+flowchart TD
+    A[Início] --> B{Decisão?}
+    B -->|Sim| C[Ação 1]
+    B -->|Não| D[Ação 2]
+    C --> E[Fim]
+    D --> E
+\`\`\`\n`;
+        break;
+      case 'sequence':
+        mermaidTemplate = `\n\`\`\`mermaid
+sequenceDiagram
+    participant C as Cliente
+    participant A as API
+    participant D as Database
+    C->>A: Requisição
+    A->>D: Query
+    D-->>A: Dados
+    A-->>C: Resposta
+\`\`\`\n`;
+        break;
+      case 'class':
+        mermaidTemplate = `\n\`\`\`mermaid
+classDiagram
+    class Animal {
+        String name
+        eat()
+        sleep()
+    }
+    class Dog {
+        bark()
+    }
+    Animal <|-- Dog
+\`\`\`\n`;
+        break;
+      case 'pie':
+        mermaidTemplate = `\n\`\`\`mermaid
+pie title Navegadores
+    "Chrome" : 60
+    "Firefox" : 20
+    "Safari" : 15
+    "Outros" : 5
+\`\`\`\n`;
+        break;
+      case 'gantt':
+        mermaidTemplate = `\n\`\`\`mermaid
+gantt
+    title Projeto de Desenvolvimento
+    dateFormat  YYYY-MM-DD
+    section Planejamento
+    Requisitos       :a1, 2024-01-01, 7d
+    Design          :a2, after a1, 5d
+    section Desenvolvimento
+    Codificação     :a3, after a2, 14d
+    Testes          :a4, after a3, 7d
+\`\`\`\n`;
+        break;
+      case 'er':
+        mermaidTemplate = `\n\`\`\`mermaid
+erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    ORDER ||--|{ LINE-ITEM : contains
+    CUSTOMER {
+        string name
+        string email
+    }
+    ORDER {
+        int id
+        date createdAt
+    }
+    LINE-ITEM {
+        int productId
+        int quantity
+        float price
+    }
+\`\`\`\n`;
+        break;
+      case 'journey':
+        mermaidTemplate = `\n\`\`\`mermaid
+journey
+    title Jornada do Usuário
+    section Pesquisa
+      Encontrar produto: 5: Usuário
+      Comparar preços: 4: Usuário
+    section Compra
+      Adicionar ao carrinho: 3: Usuário
+      Finalizar compra: 2: Usuário
+\`\`\`\n`;
+        break;
+      default:
+        mermaidTemplate = `\n\`\`\`mermaid
+graph TD
+    A[Início] --> B[Fim]
+\`\`\`\n`;
+    }
+
+    const newContent = activeTab.content.substring(0, start) + mermaidTemplate + activeTab.content.substring(textarea.selectionEnd);
+    handleContentChange(newContent);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.selectionStart = textarea.selectionEnd = start + mermaidTemplate.length;
+      updateCursorPosition();
+      setMermaidMenuOpen(false);
+    }, 0);
+  };
+
+  const handleEmoji = () => {
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const rect = textarea.getBoundingClientRect();
+    const cursorPos = textarea.selectionStart;
+    
+    // Calcular posição aproximada do cursor
+    const textBeforeCursor = textarea.value.substring(0, cursorPos);
+    const lines = textBeforeCursor.split('\n');
+    const currentLine = lines.length - 1;
+    const currentCol = lines[lines.length - 1].length;
+    
+    // Posicionar o picker perto do cursor
+    const lineHeight = 22.4; // 14px * 1.6 line-height
+    const charWidth = 8.4; // aproximado para fonte 14px
+    
+    setEmojiPickerPosition({
+      x: rect.left + 200 + (currentCol * charWidth),
+      y: rect.top + 100 + (currentLine * lineHeight)
+    });
+    setShowEmojiPicker(true);
+  };
+
+  const handleInsertEmoji = (emojiId: string) => {
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    if (!textarea || !activeTab) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    // Insere o shortcode no formato :emoji:
+    const shortcode = `:${emojiId}:`;
+    const newContent = activeTab.content.substring(0, start) + shortcode + activeTab.content.substring(end);
+    handleContentChange(newContent);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.selectionStart = textarea.selectionEnd = start + shortcode.length;
+      updateCursorPosition();
+    }, 0);
+  };
+
+  const charCount = activeTab?.content.length || 0;
+  const lineCount = activeTab?.content.split('\n').length || 0;
+  const wordCount = activeTab?.content.trim() ? activeTab.content.trim().split(/\s+/).length : 0;
+
+  return (
+    <div className="app-container">
+      {/* Main Layout */}
+      <div className="main-layout">
+        {/* Activity Bar */}
+        <ActivityBar
+          activeView={activeView}
+          onViewChange={setActiveView}
+          onOpenSettings={() => setShowSettings(prev => !prev)}
+          isSettingsOpen={showSettings}
+        />
+
+        {/* Sidebar */}
+        {activeView === 'explorer' && (
+          <div ref={explorerRef} onContextMenu={(e) => handleContextMenu(e, 'explorer')}>
+            <Sidebar
+              files={files}
+              activeFile={activeTab?.fileId || null}
+              onFileSelect={openFileInTab}
+              onNewFile={handleNewFile}
+              onOpenFile={handleOpenFile}
+              onRenameFile={handleRenameFile}
+              onCloseFile={handleCloseFileFromExplorer}
+            />
+          </div>
+        )}
+
+        {/* Editor Area */}
+        <div className="editor-area">
+          {/* Tabs */}
+          {tabs.length > 0 && (
+            <Tabs
+              tabs={tabs}
+              activeTabId={activeTabId}
+              onTabClick={setActiveTabId}
+              onTabClose={closeTab}
+            />
+          )}
+
+          {/* Toolbar */}
+          <EditorToolbar
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            onBold={handleBold}
+            onItalic={handleItalic}
+            onHeading={handleHeadingMenu}
+            onHeadingSelect={handleHeading}
+            headingMenuOpen={headingMenuOpen}
+            headingMenuPosition={headingMenuPosition}
+            onCode={handleCode}
+            onLink={handleLink}
+            onList={handleList}
+            onMermaid={handleMermaidMenu}
+            onMermaidSelect={handleMermaid}
+            mermaidMenuOpen={mermaidMenuOpen}
+            mermaidMenuPosition={mermaidMenuPosition}
+            onEmoji={handleEmoji}
+          />
+
+          {/* Editor Split View */}
+          <div
+            ref={editorRef}
+            className={`editor-split view-${viewMode}`}
+          >
+            {activeTab && (
+              <>
+                <div 
+                  className="editor-pane"
+                  onContextMenu={(e) => handleContextMenu(e, 'editor')}
+                >
+                  <TextEditor
+                    value={activeTab.content}
+                    onChange={handleContentChange}
+                    onSave={handleSave}
+                    syncScroll={syncScroll}
+                    onScrollSync={(percentage) => {
+                      setScrollPercentage(percentage);
+                      setScrollSource('editor');
+                    }}
+                    externalScrollPercentage={scrollSource === 'preview' ? scrollPercentage : undefined}
+                    scrollSource={scrollSource}
+                  />
+                </div>
+                <div 
+                  className="preview-pane"
+                  onContextMenu={(e) => handleContextMenu(e, 'preview')}
+                >
+                  <Preview
+                    content={activeTab.content}
+                    syncScroll={syncScroll}
+                    onScrollSync={(percentage) => {
+                      setScrollPercentage(percentage);
+                      setScrollSource('preview');
+                    }}
+                    externalScrollPercentage={scrollSource === 'editor' ? scrollPercentage : undefined}
+                    scrollSource={scrollSource}
+                    theme={theme}
+                  />
+                </div>
+              </>
+            )}
+            {!activeTab && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-secondary)' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <p>Nenhum arquivo aberto</p>
+                  <p style={{ fontSize: '12px', marginTop: '8px' }}>Crie um novo arquivo ou abra um existente</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Settings Panel */}
+        {showSettings && (
+          <SettingsPanel
+            theme={theme}
+            onThemeChange={setTheme}
+            onClose={() => setShowSettings(false)}
+            onOpenChangelog={() => setShowChangelog(true)}
+            syncScroll={syncScroll}
+            onSyncScrollChange={() => setSyncScroll(!syncScroll)}
+            autoSave={autoSaveEnabled}
+            onAutoSaveChange={() => setAutoSaveEnabled(!autoSaveEnabled)}
+          />
+        )}
+
+        {/* Changelog Modal */}
+        {showChangelog && (
+          <ChangelogModal
+            changelog={CHANGELOG}
+            onClose={() => setShowChangelog(false)}
+          />
+        )}
+
+        {/* Confirm Modal */}
+        {showConfirmModal && confirmModalData && (
+          <ConfirmModal
+            title="Fechar arquivo"
+            message={`Deseja realmente fechar "${confirmModalData.fileName}"?`}
+            confirmText="Fechar"
+            cancelText="Cancelar"
+            onConfirm={handleConfirmCloseFile}
+            onCancel={() => {
+              setShowConfirmModal(false);
+              setConfirmModalData(null);
+            }}
+          />
+        )}
+
+        {/* Emoji Picker */}
+        {showEmojiPicker && (
+          <EmojiPickerComponent
+            onSelectEmoji={handleInsertEmoji}
+            onClose={() => setShowEmojiPicker(false)}
+            position={emojiPickerPosition}
+          />
+        )}
+      </div>
+
+      {/* Status Bar */}
+      <StatusBar
+        fileName={activeFile?.name || ''}
+        charCount={charCount}
+        wordCount={wordCount}
+        lineCount={lineCount}
+        column={cursorPosition.column}
+        line={cursorPosition.line}
+        isDirty={activeTab?.isDirty ?? false}
+        lastSavedTime={lastSavedTime}
+      />
+
+      {/* Context Menu */}
+      {contextMenu.visible && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          target={contextMenu.target}
+          fileId={contextMenu.fileId}
+          onRename={(fileId) => {
+            const file = files.find(f => f.id === fileId);
+            if (file) {
+              const newName = prompt('Novo nome:', file.name);
+              if (newName && newName !== file.name) {
+                handleRenameFile(fileId, newName);
+              }
+            }
+            setContextMenu(prev => ({ ...prev, visible: false }));
+          }}
+          onDuplicate={handleDuplicateFile}
+          onClose={handleCloseFile}
+          onNewFile={handleNewFile}
+          onOpenFile={handleOpenFile}
+          editorActions={{
+            bold: handleBold,
+            italic: handleItalic,
+            heading: () => handleHeading(2),
+            code: handleCode,
+            link: handleLink,
+            list: handleList,
+            mermaid: () => handleMermaid('flowchart')
+          }}
+          previewActions={{
+            selectAll: handlePreviewSelectAll,
+            copy: handlePreviewCopy
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+export default App;
