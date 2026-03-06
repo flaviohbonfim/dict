@@ -2,12 +2,14 @@
 
 <div align="center">
 
-![Versão](https://img.shields.io/badge/versão-0.0.4-blue)
+![Versão](https://img.shields.io/badge/versão-0.0.5-blue)
 ![React](https://img.shields.io/badge/React-19.2.0-61dafb)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-3178c6)
 ![Vite](https://img.shields.io/badge/Vite-7.3.1-646cff)
 
 **Editor de Markdown moderno com identidade visual exclusiva, suporte a emojis, diagramas Mermaid e muito mais!**
+
+[📋 Changelog](CHANGELOG.md)
 
 </div>
 

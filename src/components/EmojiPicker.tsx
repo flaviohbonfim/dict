@@ -346,10 +346,6 @@ const COMMON_EMOJIS: EmojiData[] = [
   { id: 'fortune_cookie', native: '🥠', keywords: ['food', 'chinese'], category: 'food' },
   { id: 'takeout_box', native: '🥡', keywords: ['food', 'chinese', 'delivery'], category: 'food' },
   { id: 'crab', native: '🦀', keywords: ['food', 'seafood'], category: 'food' },
-  { id: 'lobster', native: '🦞', keywords: ['food', 'seafood'], category: 'food' },
-  { id: 'shrimp', native: '🦐', keywords: ['food', 'seafood'], category: 'food' },
-  { id: 'squid', native: '🦑', keywords: ['food', 'seafood'], category: 'food' },
-  { id: 'oyster', native: '🦪', keywords: ['food', 'seafood'], category: 'food' },
   { id: 'icecream', native: '🍦', keywords: ['food', 'dessert', 'ice cream'], category: 'food' },
   { id: 'shaved_ice', native: '🍧', keywords: ['food', 'dessert'], category: 'food' },
   { id: 'ice_cream', native: '🍨', keywords: ['food', 'dessert'], category: 'food' },
@@ -755,9 +751,9 @@ export function EmojiPickerComponent({ onSelectEmoji, onClose, position }: Emoji
         <div className="emoji-grid">
           {filteredEmojis.map((emoji: EmojiData) => (
             <button
-              key={emoji.id}
+              key={`${activeCategory}-${emoji.id}`}
               className="emoji-btn"
-              onClick={() => handleEmojiSelect(emoji.id)}
+              onClick={() => handleEmojiSelect(emoji.native)}
               title={emoji.id}
             >
               {emoji.native}

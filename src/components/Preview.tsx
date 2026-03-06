@@ -25,7 +25,7 @@ export function Preview({ content, syncScroll, onScrollSync, externalScrollPerce
 
   // Configurar custom renderer para Mermaid e código com highlight.js
   const renderer = new marked.Renderer();
-  renderer.code = ({ text, lang, escaped }) => {
+  renderer.code = ({ text, lang }) => {
     const language = lang?.trim().toLowerCase();
 
     if (language === 'mermaid') {
@@ -33,17 +33,11 @@ export function Preview({ content, syncScroll, onScrollSync, externalScrollPerce
     }
 
     // Usa highlight.js para realce de sintaxe
-    const code = escaped ? text : text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-
-    let highlightedCode = code;
+    // O marked já retorna o texto escaped, não precisamos escapar novamente
+    let highlightedCode = text;
     if (language && hljs.getLanguage(language)) {
       try {
-        highlightedCode = hljs.highlight(code, { language }).value;
+        highlightedCode = hljs.highlight(text, { language }).value;
       } catch (e) {
         console.error('Erro ao aplicar highlight.js:', e);
       }

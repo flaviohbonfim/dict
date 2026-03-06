@@ -132,52 +132,80 @@ pie
 **Dica:** Use os atalhos de teclado para formatar seu texto mais rapidamente!
 `;
 
-const CHANGELOG = `## Versão 0.0.5 - Produtividade: Busca, Substituição e Navegação
+const CHANGELOG = `## Versão 0.0.5 - Busca, Substituição e Navegação Avançada
 
 ### Novas Funcionalidades
 
-#### Refazer (Ctrl+Y)
-- Sistema completo de Undo/Redo
-- Histórico de até 100 alterações
-- Suporte para Ctrl+Y e Ctrl+Shift+Z
-
 #### Buscar no Arquivo (Ctrl+F)
-- Barra de busca flutuante
-- Navegação entre resultados (anterior/próximo)
-- Opção: Maiúsculas/Minúsculas
-- Opção: Palavra inteira
-- Contador de ocorrências
+- Barra de busca estilo VSCode
+- Highlights visuais em todos os matches (azul ciano Nord)
+- Match atual destacado com cor mais forte e borda
+- Navegação entre resultados (Enter/Shift+Enter)
+- Contador de resultados em tempo real
+- Opções: Case sensitive, Palavra inteira
+- Foco permanece na busca durante navegação
+- Highlights limpam ao fechar busca
 
 #### Substituir (Ctrl+H)
+- Integrado com a busca
+- Campo de substituição abaixo da busca
 - Substituir ocorrência individual
 - Substituir todas as ocorrências
-- Integrado com a busca
+- Layout inspirado no VSCode
 
 #### Ir para Linha (Ctrl+G)
 - Modal de navegação rápida
 - Digite o número da linha
 - Navegação instantânea
+- Fecha com ESC
 
-#### Tempo de Leitura
-- Estimativa de tempo de leitura na StatusBar
+#### Refazer (Ctrl+Y)
+- Sistema completo de Undo/Redo
+- Histórico de até 100 alterações
+- Suporte para Ctrl+Y e Ctrl+Shift+Z
+- Limpa ao fazer nova alteração
+
+#### Contagem de Tempo de Leitura
+- Estimativa de tempo na StatusBar
 - Baseado em 200 palavras por minuto
 - Exibido ao lado da contagem de palavras
 
 ### Melhorias de UX
 
-#### Atalhos de Teclado
-- **Ctrl+F**: Abrir busca
-- **Ctrl+H**: Abrir substituição
-- **Ctrl+G**: Ir para linha
-- **Ctrl+Y**: Refazer
-- **Ctrl+Shift+Z**: Refazer (alternativo)
-- **ESC**: Fechar busca/modais
+#### Highlights de Busca
+- Cores do tema Nord (azul ciano)
+- Match atual mais forte com borda
+- Highlights sincronizam com scroll
+- Limpam ao fechar busca ou apagar pesquisa
 
-#### Interface
-- Barra de busca compacta e flutuante
-- Modal "Ir para Linha" minimalista
-- Highlight de resultados da busca
-- Navegação suave entre ocorrências
+#### Navegação Circular
+- Enter no último → volta pro primeiro
+- Shift+Enter no primeiro → vai pro último
+- Scroll automático para o match
+
+#### Interface de Busca
+- Botões de opção estilizados (sem checkboxes)
+- Ícones para Case Sensitive e Palavra Inteira
+- Contador "X de Y" ou "Sem resultados"
+- Mensagem vermelha quando não acha nada
+
+### Correções
+
+#### Bug do Contador
+- Contador zera ao apagar pesquisa
+- Highlights limpam ao fechar busca
+- Query vazia limpa resultados imediatamente
+
+#### Bug do EmojiPicker
+- Emojis duplicados removidos (lobster, shrimp, squid, oyster)
+- Scroll adicionado para ver todos emojis
+- Categorias não cortam mais
+- Atualização correta ao mudar categoria
+
+#### Bug do Preview
+- Código não escapa aspas duplas
+- JavaScript e JSON renderizam corretamente
+- Syntax highlighting mantido
 
 ---
 
