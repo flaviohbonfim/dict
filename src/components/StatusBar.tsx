@@ -9,6 +9,7 @@ interface StatusBarProps {
   line: number;
   isDirty: boolean;
   lastSavedTime: Date | null;
+  readingTime?: number;
 }
 
 export function StatusBar({ 
@@ -19,7 +20,8 @@ export function StatusBar({
   column, 
   line,
   isDirty,
-  lastSavedTime
+  lastSavedTime,
+  readingTime
 }: StatusBarProps) {
   // Formata o tempo de salvamento
   const formatSavedTime = (date: Date | null) => {
@@ -63,6 +65,11 @@ export function StatusBar({
         <div className="status-bar-item">
           <span>{wordCount} palavras</span>
         </div>
+        {readingTime && readingTime > 0 && (
+          <div className="status-bar-item">
+            <span>{readingTime} min leitura</span>
+          </div>
+        )}
         <div className="status-bar-item">
           <span>{charCount} caracteres</span>
         </div>

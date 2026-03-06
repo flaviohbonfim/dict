@@ -8,13 +8,27 @@ interface TextEditorProps {
   onScrollSync?: (scrollPercentage: number) => void;
   externalScrollPercentage?: number;
   scrollSource: 'editor' | 'preview' | null;
+  searchQuery?: string;
+  searchMatches?: { start: number; end: number }[];
+  currentMatchIndex?: number;
 }
 
-export function TextEditor({ value, onChange, onSave, syncScroll, onScrollSync, externalScrollPercentage, scrollSource }: TextEditorProps) {
+export function TextEditor({ 
+  value, 
+  onChange, 
+  onSave, 
+  syncScroll, 
+  onScrollSync, 
+  externalScrollPercentage,
+  scrollSource,
+  searchQuery = '',
+  searchMatches = [],
+  currentMatchIndex = -1
+}: TextEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
   const isUpdatingScroll = useRef(false);
-  const lastSyncPercentage = useRef<number>(-1);
+  const highlightLayerRef = useRef<HTMLDivElement>(null);
 
   const lineCount = value.split('\n').length;
   const lines = Array.from({ length: Math.max(lineCount, 1) }, (_, i) => i + 1);
@@ -32,7 +46,7 @@ export function TextEditor({ value, onChange, onSave, syncScroll, onScrollSync, 
     return maxScroll > 0 ? scrollTop / maxScroll : 0;
   }, []);
 
-  // Handler de scroll - apenas envia atualizações quando usuário rola manualmente
+  // Handler de scroll
   const handleScroll = useCallback((e: React.UIEvent<HTMLTextAreaElement>) => {
     const textarea = e.currentTarget;
 
@@ -52,22 +66,15 @@ export function TextEditor({ value, onChange, onSave, syncScroll, onScrollSync, 
 
     // Calcula e envia porcentagem de scroll
     const percentage = getScrollPercentage();
-
-    // Previne enviar o mesmo valor repetidamente
-    if (Math.abs(lastSyncPercentage.current - percentage) < 0.01) {
-      return;
-    }
-
-    lastSyncPercentage.current = percentage;
     onScrollSync(percentage);
   }, [syncScroll, onScrollSync, getScrollPercentage]);
 
-  // Scroll externo - apenas quando externalScrollPercentage muda
+  // Scroll externo
   useEffect(() => {
     if (!syncScroll) return;
     if (externalScrollPercentage === undefined || externalScrollPercentage === null) return;
     if (!textareaRef.current) return;
-    
+
     // Só aplica scroll externo se veio do preview
     if (scrollSource !== 'preview') return;
 
@@ -91,6 +98,91 @@ export function TextEditor({ value, onChange, onSave, syncScroll, onScrollSync, 
       });
     }
   }, [externalScrollPercentage, syncScroll, scrollSource]);
+
+  // Renderizar highlights da busca
+  useEffect(() => {
+    if (!highlightLayerRef.current || !textareaRef.current || !searchQuery || searchMatches.length === 0) {
+      if (highlightLayerRef.current) {
+        highlightLayerRef.current.innerHTML = '';
+      }
+      return;
+    }
+
+    const textarea = textareaRef.current;
+    const highlightLayer = highlightLayerRef.current;
+
+    const renderHighlights = () => {
+      // Clear previous highlights
+      highlightLayer.innerHTML = '';
+
+      // Copy styles from textarea
+      const computedStyle = window.getComputedStyle(textarea);
+      highlightLayer.style.fontFamily = computedStyle.fontFamily;
+      highlightLayer.style.fontSize = computedStyle.fontSize;
+      highlightLayer.style.lineHeight = computedStyle.lineHeight;
+      highlightLayer.style.padding = computedStyle.padding;
+      highlightLayer.style.whiteSpace = 'pre';
+      highlightLayer.style.overflow = 'hidden';
+      highlightLayer.style.pointerEvents = 'none';
+
+      // Create a test element to measure character dimensions
+      const testChar = document.createElement('span');
+      testChar.textContent = 'X';
+      testChar.style.visibility = 'hidden';
+      testChar.style.position = 'absolute';
+      testChar.style.fontFamily = computedStyle.fontFamily;
+      testChar.style.fontSize = computedStyle.fontSize;
+      textarea.parentElement?.appendChild(testChar);
+      const charWidth = testChar.getBoundingClientRect().width;
+      const lineHeight = parseFloat(computedStyle.lineHeight) || 22.4;
+      const paddingTop = parseFloat(computedStyle.paddingTop) || 16;
+      const paddingLeft = parseFloat(computedStyle.paddingLeft) || 16;
+      testChar.remove();
+
+      // Create highlight marks
+      searchMatches.forEach((match, index) => {
+        const isCurrent = index === currentMatchIndex;
+
+        const mark = document.createElement('div');
+        mark.className = 'search-match-mark';
+        mark.style.backgroundColor = isCurrent
+          ? 'var(--search-current-match)'
+          : 'var(--search-match)';
+        mark.style.border = isCurrent ? '1px solid var(--search-current-border)' : 'none';
+        mark.style.borderRadius = '2px';
+        mark.style.pointerEvents = 'none';
+        mark.style.position = 'absolute';
+
+        // Calculate position
+        const textBeforeMatch = value.substring(0, match.start);
+        const lines = textBeforeMatch.split('\n');
+        const lineNumber = lines.length - 1;
+        const columnNumber = lines[lines.length - 1].length;
+
+        // Position the highlight with scroll offset and padding
+        mark.style.left = `${paddingLeft + columnNumber * charWidth}px`;
+        mark.style.top = `${paddingTop + lineNumber * lineHeight - textarea.scrollTop}px`;
+        mark.style.width = `${(match.end - match.start) * charWidth}px`;
+        mark.style.height = `${lineHeight - 2}px`;
+
+        highlightLayer.appendChild(mark);
+      });
+    };
+
+    // Initial render
+    renderHighlights();
+
+    // Update on scroll
+    textarea.addEventListener('scroll', renderHighlights);
+
+    return () => {
+      textarea.removeEventListener('scroll', renderHighlights);
+      // Clear highlights on cleanup
+      if (highlightLayerRef.current) {
+        highlightLayerRef.current.innerHTML = '';
+      }
+    };
+  }, [searchQuery, searchMatches, currentMatchIndex, value]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Tabulação
@@ -160,6 +252,11 @@ export function TextEditor({ value, onChange, onSave, syncScroll, onScrollSync, 
         ))}
       </div>
       <div className="editor-wrapper">
+        {/* Highlight layer for search */}
+        <div
+          ref={highlightLayerRef}
+          className="search-highlight-layer"
+        />
         <textarea
           ref={textareaRef}
           className="text-editor"

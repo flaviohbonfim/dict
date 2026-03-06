@@ -26,6 +26,10 @@
   --tab-inactive-bg: #3b4252;
   --code-bg: #434c5e;
   --mermaid-bg: #3b4252;
+  /* Search highlight colors - Nord theme */
+  --search-match: rgba(136, 192, 208, 0.3);
+  --search-current-match: rgba(136, 192, 208, 0.5);
+  --search-current-border: rgba(136, 192, 208, 0.8);
   /* Nord palette extras */
   --nord-red: #bf616a;
   --nord-orange: #d08770;
@@ -62,6 +66,10 @@
   --tab-inactive-bg: #f0f4f8;
   --code-bg: #edf2f7;
   --mermaid-bg: #f5f5f5;
+  /* Search highlight colors - Light theme */
+  --search-match: rgba(90, 142, 163, 0.3);
+  --search-current-match: rgba(90, 142, 163, 0.5);
+  --search-current-border: rgba(90, 142, 163, 0.8);
 }
 
 * {

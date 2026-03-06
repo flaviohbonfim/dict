@@ -170,7 +170,7 @@ export function SettingsPanel({
             <p><strong>dict</strong> é um editor de Markdown leve e moderno,</p>
             <p>inspirado no VS Code, com suporte a diagramas Mermaid.</p>
             <br />
-            <p><strong>Versão:</strong> 0.0.4</p>
+            <p><strong>Versão:</strong> 0.0.5</p>
             <p><strong>Tecnologias:</strong> React, TypeScript, Vite</p>
             <br />
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>

@@ -11,6 +11,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { ConfirmModal } from './components/ConfirmModal';
 import { ChangelogModal } from './components/ChangelogModal';
 import { EmojiPickerComponent } from './components/EmojiPicker';
+import { SearchBar } from './components/SearchBar';
 import './styles/global.css';
 import './styles/layout.css';
 
@@ -131,7 +132,56 @@ pie
 **Dica:** Use os atalhos de teclado para formatar seu texto mais rapidamente!
 `;
 
-const CHANGELOG = `## Versão 0.0.4 - Emojis, Submenus e Melhorias de UX
+const CHANGELOG = `## Versão 0.0.5 - Produtividade: Busca, Substituição e Navegação
+
+### Novas Funcionalidades
+
+#### Refazer (Ctrl+Y)
+- Sistema completo de Undo/Redo
+- Histórico de até 100 alterações
+- Suporte para Ctrl+Y e Ctrl+Shift+Z
+
+#### Buscar no Arquivo (Ctrl+F)
+- Barra de busca flutuante
+- Navegação entre resultados (anterior/próximo)
+- Opção: Maiúsculas/Minúsculas
+- Opção: Palavra inteira
+- Contador de ocorrências
+
+#### Substituir (Ctrl+H)
+- Substituir ocorrência individual
+- Substituir todas as ocorrências
+- Integrado com a busca
+
+#### Ir para Linha (Ctrl+G)
+- Modal de navegação rápida
+- Digite o número da linha
+- Navegação instantânea
+
+#### Tempo de Leitura
+- Estimativa de tempo de leitura na StatusBar
+- Baseado em 200 palavras por minuto
+- Exibido ao lado da contagem de palavras
+
+### Melhorias de UX
+
+#### Atalhos de Teclado
+- **Ctrl+F**: Abrir busca
+- **Ctrl+H**: Abrir substituição
+- **Ctrl+G**: Ir para linha
+- **Ctrl+Y**: Refazer
+- **Ctrl+Shift+Z**: Refazer (alternativo)
+- **ESC**: Fechar busca/modais
+
+#### Interface
+- Barra de busca compacta e flutuante
+- Modal "Ir para Linha" minimalista
+- Highlight de resultados da busca
+- Navegação suave entre ocorrências
+
+---
+
+## Versão 0.0.4 - Emojis, Submenus e Melhorias de UX
 
 ### Novas Funcionalidades
 
@@ -341,10 +391,20 @@ function App() {
   const [mermaidMenuOpen, setMermaidMenuOpen] = useState(false);
   const [headingMenuPosition, setHeadingMenuPosition] = useState({ x: 0, y: 0 });
   const [mermaidMenuPosition, setMermaidMenuPosition] = useState({ x: 0, y: 0 });
+  // Search state
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchMatches, setSearchMatches] = useState<{ start: number; end: number }[]>([]);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const [replacementText, setReplacementText] = useState('');
+  // Go to line state
+  const [showGoToLine, setShowGoToLine] = useState(false);
+  const [goToLineNumber, setGoToLineNumber] = useState('');
   // Undo/Redo history
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const MAX_HISTORY = 50;
+  const [redoStack, setRedoStack] = useState<string[]>([]);
+  const MAX_HISTORY = 100;
   // Confirm modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalData, setConfirmModalData] = useState<{ fileId: string; fileName: string } | null>(null);
@@ -468,6 +528,11 @@ function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Fechar modais com ESC
       if (e.key === 'Escape') {
+        if (showSearch) {
+          e.preventDefault();
+          setShowSearch(false);
+          return;
+        }
         if (showSettings) {
           e.preventDefault();
           setShowSettings(false);
@@ -489,6 +554,28 @@ function App() {
           setConfirmModalData(null);
           return;
         }
+      }
+
+      // Buscar (Ctrl+F)
+      if (e.ctrlKey && e.key === 'f') {
+        e.preventDefault();
+        setShowSearch(true);
+        return;
+      }
+
+      // Substituir (Ctrl+H)
+      if (e.ctrlKey && e.key === 'h') {
+        e.preventDefault();
+        setShowSearch(true);
+        return;
+      }
+
+      // Ir para Linha (Ctrl+G)
+      if (e.ctrlKey && e.key === 'g') {
+        e.preventDefault();
+        setShowGoToLine(true);
+        setGoToLineNumber('');
+        return;
       }
 
       // Alternar view mode (Ctrl+\)
@@ -518,7 +605,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showSettings, showChangelog, showEmojiPicker, showConfirmModal]);
+  }, [showSearch, showSettings, showChangelog, showEmojiPicker, showConfirmModal]);
 
   // Calcular posição do cursor
   const updateCursorPosition = useCallback(() => {
@@ -608,6 +695,7 @@ function App() {
       return newHistory;
     });
     setHistoryIndex(prev => Math.min(prev + 1, MAX_HISTORY - 1));
+    setRedoStack([]); // Limpar redo stack ao fazer nova alteração
 
     setTabs(prev => prev.map(t =>
       t.id === activeTabId
@@ -627,6 +715,9 @@ function App() {
     if (historyIndex < 0 || !activeTab) return;
 
     const previousContent = history[historyIndex];
+    
+    // Adicionar conteúdo atual ao redo stack
+    setRedoStack(prev => [activeTab.content, ...prev]);
     setHistoryIndex(prev => prev - 1);
 
     setTabs(prev => prev.map(t =>
@@ -642,18 +733,208 @@ function App() {
     ));
   }, [history, historyIndex, activeTab, activeTabId]);
 
-  // Handler para atalho Ctrl+Z
+  // Função de Redo (Ctrl+Y)
+  const handleRedo = useCallback(() => {
+    if (redoStack.length === 0 || !activeTab) return;
+
+    const [nextContent, ...remainingRedo] = redoStack;
+    
+    // Adicionar conteúdo atual ao history
+    setHistory(prev => [...prev, activeTab.content]);
+    setHistoryIndex(prev => prev + 1);
+    setRedoStack(remainingRedo);
+
+    setTabs(prev => prev.map(t =>
+      t.id === activeTabId
+        ? { ...t, content: nextContent, isDirty: true }
+        : t
+    ));
+
+    setFiles(prev => prev.map(f =>
+      f.id === activeTab.fileId
+        ? { ...f, content: nextContent }
+        : f
+    ));
+  }, [redoStack, activeTab, activeTabId]);
+
+  // Funções de Busca
+  const handleSearch = useCallback((query: string, options: { matchCase: boolean; matchWholeWord: boolean }) => {
+    setSearchQuery(query);
+    
+    if (!query || !activeTab || query.trim() === '') {
+      setSearchMatches([]);
+      setCurrentMatchIndex(-1);
+      return;
+    }
+
+    const content = activeTab.content;
+    const matches: { start: number; end: number }[] = [];
+    const flags = options.matchCase ? 'g' : 'gi';
+    
+    if (options.matchWholeWord) {
+      const regex = new RegExp(`\\b${escapeRegex(query)}\\b`, flags);
+      let match;
+      while ((match = regex.exec(content)) !== null) {
+        matches.push({ start: match.index, end: match.index + match[0].length });
+      }
+    } else {
+      const regex = new RegExp(escapeRegex(query), flags);
+      let match;
+      while ((match = regex.exec(content)) !== null) {
+        matches.push({ start: match.index, end: match.index + match[0].length });
+      }
+    }
+
+    setSearchMatches(matches);
+    // Keep current index if valid, otherwise reset to 0
+    setCurrentMatchIndex(prev => {
+      if (matches.length === 0) return -1;
+      return prev >= 0 && prev < matches.length ? prev : 0;
+    });
+  }, [activeTab]);
+
+  // Clear search when content changes significantly
+  useEffect(() => {
+    if (searchQuery && activeTab && searchMatches.length > 0) {
+      // Re-run search to update matches with new content
+      handleSearch(searchQuery, { matchCase: false, matchWholeWord: false });
+    }
+  }, [activeTab?.content, searchQuery, handleSearch]);
+
+  // Clear search highlights when closing search bar
+  const handleCloseSearch = useCallback(() => {
+    // Clear state synchronously
+    setSearchQuery('');
+    setSearchMatches([]);
+    setCurrentMatchIndex(-1);
+    // Then close
+    setTimeout(() => setShowSearch(false), 0);
+  }, []);
+
+  const scrollToMatch = (index: number) => {
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    if (!textarea || searchMatches.length === 0) return;
+
+    const match = searchMatches[index];
+
+    // Calculate line number and scroll to make it visible
+    const textBeforeMatch = textarea.value.substring(0, match.start);
+    const lineNumber = textBeforeMatch.split('\n').length;
+    const lineHeight = 22.4; // Approximate line height
+    const visibleLines = Math.floor(textarea.clientHeight / lineHeight);
+
+    // Scroll to center the match
+    const targetScrollLine = lineNumber - Math.floor(visibleLines / 2);
+    
+    // Scroll to the position
+    textarea.scrollTop = Math.max(0, targetScrollLine * lineHeight);
+  };
+
+  const handleFindNext = useCallback(() => {
+    if (searchMatches.length === 0) return;
+    
+    const nextIndex = (currentMatchIndex + 1) % searchMatches.length;
+    setCurrentMatchIndex(nextIndex);
+    // Scroll after state update
+    setTimeout(() => {
+      scrollToMatch(nextIndex);
+    }, 50);
+  }, [searchMatches, currentMatchIndex]);
+
+  const handleFindPrevious = useCallback(() => {
+    if (searchMatches.length === 0) return;
+    
+    // Properly loop back to the last match when going backwards from first
+    const prevIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length;
+    setCurrentMatchIndex(prevIndex);
+    // Scroll after state update
+    setTimeout(() => {
+      scrollToMatch(prevIndex);
+    }, 50);
+  }, [searchMatches, currentMatchIndex]);
+
+  const handleReplace = useCallback((replacement: string) => {
+    setReplacementText(replacement);
+  }, []);
+
+  const handleReplaceOne = useCallback(() => {
+    if (!activeTab || searchMatches.length === 0 || currentMatchIndex < 0) return;
+
+    const match = searchMatches[currentMatchIndex];
+    const newContent = activeTab.content.substring(0, match.start) + 
+                       replacementText + 
+                       activeTab.content.substring(match.end);
+    
+    handleContentChange(newContent);
+    
+    // Re-search after replacement
+    setTimeout(() => {
+      handleSearch(searchQuery, { matchCase: false, matchWholeWord: false });
+    }, 100);
+  }, [activeTab, searchMatches, currentMatchIndex, replacementText, handleContentChange, handleSearch, searchQuery]);
+
+  const handleReplaceAll = useCallback(() => {
+    if (!activeTab || !searchQuery) return;
+
+    const flags = 'g';
+    const regex = new RegExp(escapeRegex(searchQuery), flags);
+    const newContent = activeTab.content.replace(regex, replacementText);
+    
+    handleContentChange(newContent);
+    setSearchMatches([]);
+    setCurrentMatchIndex(-1);
+  }, [activeTab, searchQuery, replacementText, handleContentChange]);
+
+  // Helper function
+  function escapeRegex(string: string): string {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  // Ir para Linha
+  const handleGoToLine = useCallback(() => {
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    if (!textarea || !goToLineNumber) return;
+
+    const line = parseInt(goToLineNumber, 10);
+    if (isNaN(line) || line < 1) return;
+
+    const content = activeTab?.content || '';
+    const lines = content.split('\n');
+    
+    if (line > lines.length) return;
+
+    // Calcular posição do início da linha
+    let position = 0;
+    for (let i = 0; i < line - 1; i++) {
+      position += lines[i].length + 1;
+    }
+
+    textarea.focus();
+    textarea.setSelectionRange(position, position);
+    setShowGoToLine(false);
+  }, [goToLineNumber, activeTab]);
+
+  // Handler para atalhos de Undo/Redo
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === 'z') {
+      // Undo (Ctrl+Z)
+      if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         handleUndo();
+        return;
+      }
+      
+      // Redo (Ctrl+Y ou Ctrl+Shift+Z)
+      if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'z') || (e.ctrlKey && e.shiftKey && e.key === 'Z')) {
+        e.preventDefault();
+        handleRedo();
+        return;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleUndo]);
+  }, [handleUndo, handleRedo]);
 
   // Novo arquivo
   const handleNewFile = useCallback(() => {
@@ -1057,6 +1338,7 @@ graph TD
   const charCount = activeTab?.content.length || 0;
   const lineCount = activeTab?.content.split('\n').length || 0;
   const wordCount = activeTab?.content.trim() ? activeTab.content.trim().split(/\s+/).length : 0;
+  const readingTime = Math.ceil(wordCount / 200); // Média: 200 palavras por minuto
 
   return (
     <div className="app-container">
@@ -1139,6 +1421,9 @@ graph TD
                     }}
                     externalScrollPercentage={scrollSource === 'preview' ? scrollPercentage : undefined}
                     scrollSource={scrollSource}
+                    searchQuery={searchQuery}
+                    searchMatches={searchMatches}
+                    currentMatchIndex={currentMatchIndex}
                   />
                 </div>
                 <div 
@@ -1207,6 +1492,53 @@ graph TD
           />
         )}
 
+        {/* Search Bar */}
+        {showSearch && activeTab && (
+          <SearchBar
+            onSearch={handleSearch}
+            onReplace={handleReplace}
+            onReplaceOne={handleReplaceOne}
+            onReplaceAll={handleReplaceAll}
+            onClose={handleCloseSearch}
+            totalMatches={searchMatches.length}
+            currentIndex={currentMatchIndex}
+            onFindNext={handleFindNext}
+            onFindPrevious={handleFindPrevious}
+          />
+        )}
+
+        {/* Go to Line Modal */}
+        {showGoToLine && (
+          <div className="modal-overlay" onClick={() => setShowGoToLine(false)}>
+            <div className="go-to-line-modal" onClick={(e) => e.stopPropagation()}>
+              <h3>Ir para Linha</h3>
+              <input
+                type="number"
+                className="go-to-line-input"
+                placeholder="Número da linha"
+                value={goToLineNumber}
+                onChange={(e) => setGoToLineNumber(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleGoToLine();
+                  } else if (e.key === 'Escape') {
+                    setShowGoToLine(false);
+                  }
+                }}
+                autoFocus
+              />
+              <div className="go-to-line-actions">
+                <button className="btn btn-secondary" onClick={() => setShowGoToLine(false)}>
+                  Cancelar
+                </button>
+                <button className="btn btn-primary" onClick={handleGoToLine}>
+                  Ir
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Emoji Picker */}
         {showEmojiPicker && (
           <EmojiPickerComponent
@@ -1227,6 +1559,7 @@ graph TD
         line={cursorPosition.line}
         isDirty={activeTab?.isDirty ?? false}
         lastSavedTime={lastSavedTime}
+        readingTime={readingTime}
       />
 
       {/* Context Menu */}

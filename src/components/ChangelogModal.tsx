@@ -1,14 +1,40 @@
-import { X } from 'lucide-react';
+import { useState } from 'react';
+import { X, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface ChangelogModalProps {
   onClose: () => void;
   changelog: string;
 }
 
+interface Version {
+  title: string;
+  sections: Section[];
+}
+
+interface Section {
+  title: string;
+  items: string[];
+}
+
 export function ChangelogModal({ onClose, changelog }: ChangelogModalProps) {
+  // Parse changelog into versions
+  const versions = parseChangelog(changelog);
+  
+  // First version open by default
+  const [openVersions, setOpenVersions] = useState<Record<number, boolean>>({
+    0: true
+  });
+
+  const toggleVersion = (index: number) => {
+    setOpenVersions(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content changelog-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Changelog</h2>
           <button className="modal-close" onClick={onClose}>
@@ -16,25 +42,39 @@ export function ChangelogModal({ onClose, changelog }: ChangelogModalProps) {
           </button>
         </div>
         <div className="modal-body">
-          <div className="changelog-content">
-            {changelog.split('\n').map((line, index) => {
-              if (line.startsWith('## ')) {
-                return <h3 key={index} className="changelog-version">{line.replace('## ', '')}</h3>;
-              } else if (line.startsWith('### ')) {
-                return <h4 key={index} className="changelog-section">{line.replace('### ', '')}</h4>;
-              } else if (line.startsWith('- ')) {
-                return (
-                  <li key={index} className="changelog-item">
-                    {line.replace('- ', '')}
-                  </li>
-                );
-              } else if (line.startsWith('#### ')) {
-                return <h5 key={index} className="changelog-subsection">{line.replace('#### ', '')}</h5>;
-              } else if (line.trim()) {
-                return <p key={index} className="changelog-text">{line}</p>;
-              }
-              return <br key={index} />;
-            })}
+          <div className="changelog-versions">
+            {versions.map((version, versionIndex) => (
+              <div key={versionIndex} className="changelog-version-block">
+                <button
+                  className="changelog-version-header"
+                  onClick={() => toggleVersion(versionIndex)}
+                >
+                  {openVersions[versionIndex] ? (
+                    <ChevronDown size={16} />
+                  ) : (
+                    <ChevronRight size={16} />
+                  )}
+                  <h3 className="changelog-version">{version.title}</h3>
+                </button>
+                
+                {openVersions[versionIndex] && (
+                  <div className="changelog-version-content">
+                    {version.sections.map((section, sectionIndex) => (
+                      <div key={sectionIndex} className="changelog-section-block">
+                        <h4 className="changelog-section">{section.title}</h4>
+                        <ul className="changelog-list">
+                          {section.items.map((item, itemIndex) => (
+                            <li key={itemIndex} className="changelog-item">
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
         <div className="modal-footer">
@@ -45,4 +85,54 @@ export function ChangelogModal({ onClose, changelog }: ChangelogModalProps) {
       </div>
     </div>
   );
+}
+
+function parseChangelog(changelog: string): Version[] {
+  const versions: Version[] = [];
+  const lines = changelog.split('\n');
+  
+  let currentVersion: Version | null = null;
+  let currentSection: Section | null = null;
+  
+  for (const line of lines) {
+    if (line.startsWith('## ')) {
+      // Save previous version
+      if (currentVersion) {
+        if (currentSection) {
+          currentVersion.sections.push(currentSection);
+        }
+        versions.push(currentVersion);
+      }
+      
+      // Start new version
+      currentVersion = {
+        title: line.replace('## ', ''),
+        sections: []
+      };
+      currentSection = null;
+    } else if (line.startsWith('### ') && currentVersion) {
+      // Save previous section
+      if (currentSection) {
+        currentVersion.sections.push(currentSection);
+      }
+      
+      // Start new section
+      currentSection = {
+        title: line.replace('### ', ''),
+        items: []
+      };
+    } else if (line.startsWith('- ') && currentSection) {
+      currentSection.items.push(line.replace('- ', ''));
+    }
+  }
+  
+  // Save last version
+  if (currentVersion) {
+    if (currentSection) {
+      currentVersion.sections.push(currentSection);
+    }
+    versions.push(currentVersion);
+  }
+  
+  return versions;
 }
