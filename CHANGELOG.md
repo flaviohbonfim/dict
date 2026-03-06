@@ -7,7 +7,76 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
-## [0.0.5] - 2024 - Busca, Substituição e Navegação Avançada
+## [0.0.6] - Gerenciamento de Arquivos e Organização por Pastas
+
+### 🎉 Novas Funcionalidades
+
+#### Arrastar e Soltar (Drag & Drop)
+- Importar arquivos arrastando do computador
+- Overlay visual com mensagem ao arrastar
+- Aceita arquivos .md, .markdown e .txt
+- Abertura automática ao soltar
+
+#### Histórico de Arquivos Recentes
+- Lista dos últimos 10 arquivos abertos
+- Exibido na sidebar com ícone de relógio
+- Tempo decorrido ("5min atrás", "2h atrás", "3d atrás")
+- Reabre arquivo ao clicar
+- Persiste no localStorage
+
+#### Sistema de Favoritos
+- Marcar arquivos como favoritos com estrela ⭐
+- Seção dedicada no topo da sidebar
+- Estrela dourada quando é favorito
+- Acesso rápido aos arquivos importantes
+- Persiste no localStorage
+
+#### Organização por Pastas
+- Criar pastas para organizar arquivos
+- Estrutura hierárquica com indentação visual
+- Expandir/recolher pastas (▶/▼)
+- Arrastar arquivos para dentro das pastas
+- Arrastar para área vazia para mover para raiz
+- Renomear arquivos e pastas (botão ✏️)
+- Excluir arquivos e pastas (botão 🗑️)
+- Exclusão de pastas exclui filhos recursivamente
+- Modal customizado para confirmação de exclusão
+
+### ✨ Melhorias de UX
+
+#### Interface Padronizada
+- Todos os ícones na mesma cor (var(--text-secondary))
+- Botões de ação com hover consistente
+- Sem cores vermelhas (mantém padrão do tema)
+- Ícones Lucide em todo o app
+
+#### Drag & Drop Inteligente
+- Overlay só aparece ao arrastar de FORA do app
+- Ao arrastar do sidebar, overlay não aparece
+- Dados transferidos com metadados (source, fileId)
+- Stop propagation para não "borbulhar" eventos
+
+#### Confirmação de Exclusão
+- Modal customizado (não usa confirm() nativo)
+- Mensagem contextual para pastas
+- Avisa que filhos serão excluídos
+- Mesma UI para fechar e excluir
+
+### 🐛 Correções
+
+#### Bug do Renomear
+- Input de renomear funcionando corretamente
+- Enter salva, Escape cancela
+- Blur salva automaticamente
+
+#### Bug do Drag & Drop
+- Overlay não fica aberto após drop
+- Eventos não borbulham para main-layout
+- Só processa drag do sidebar ou externo
+
+---
+
+## [0.0.5] - Busca, Substituição e Navegação Avançada
 
 ### 🎉 Novas Funcionalidades
 

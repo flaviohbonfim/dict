@@ -19,7 +19,8 @@ interface FileData {
   id: string;
   name: string;
   type: 'file' | 'folder';
-  content: string;
+  content?: string;
+  parentId?: string; // ID da pasta pai
 }
 
 interface Tab {
@@ -36,6 +37,13 @@ interface ContextMenuState {
   y: number;
   target: 'explorer' | 'editor' | 'preview' | null;
   fileId?: string;
+}
+
+interface RecentFile {
+  id: string;
+  name: string;
+  content: string;
+  lastOpened: number;
 }
 
 const DEFAULT_CONTENT = `# Bem-vindo ao dict
@@ -132,7 +140,76 @@ pie
 **Dica:** Use os atalhos de teclado para formatar seu texto mais rapidamente!
 `;
 
-const CHANGELOG = `## Versão 0.0.5 - Busca, Substituição e Navegação Avançada
+const CHANGELOG = `## Versão 0.0.6 - Gerenciamento de Arquivos e Organização por Pastas
+
+### Novas Funcionalidades
+
+#### Arrastar e Soltar (Drag & Drop)
+- Importar arquivos arrastando do computador
+- Overlay visual com mensagem ao arrastar
+- Aceita arquivos .md, .markdown e .txt
+- Abertura automática ao soltar
+
+#### Histórico de Arquivos Recentes
+- Lista dos últimos 10 arquivos abertos
+- Exibido na sidebar com ícone de relógio
+- Tempo decorrido ("5min atrás", "2h atrás", "3d atrás")
+- Reabre arquivo ao clicar
+- Persiste no localStorage
+
+#### Sistema de Favoritos
+- Marcar arquivos como favoritos com estrela ⭐
+- Seção dedicada no topo da sidebar
+- Estrela dourada quando é favorito
+- Acesso rápido aos arquivos importantes
+- Persiste no localStorage
+
+#### Organização por Pastas
+- Criar pastas para organizar arquivos
+- Estrutura hierárquica com indentação visual
+- Expandir/recolher pastas (▶/▼)
+- Arrastar arquivos para dentro das pastas
+- Arrastar para área vazia para mover para raiz
+- Renomear arquivos e pastas (botão ✏️)
+- Excluir arquivos e pastas (botão 🗑️)
+- Exclusão de pastas exclui filhos recursivamente
+- Modal customizado para confirmação de exclusão
+
+### Melhorias de UX
+
+#### Interface Padronizada
+- Todos os ícones na mesma cor (var(--text-secondary))
+- Botões de ação com hover consistente
+- Sem cores vermelhas (mantém padrão do tema)
+- Ícones Lucide em todo o app
+
+#### Drag & Drop Inteligente
+- Overlay só aparece ao arrastar de FORA do app
+- Ao arrastar do sidebar, overlay não aparece
+- Dados transferidos com metadados (source, fileId)
+- Stop propagation para não "borbulhar" eventos
+
+#### Confirmação de Exclusão
+- Modal customizado (não usa confirm() nativo)
+- Mensagem contextual para pastas
+- Avisa que filhos serão excluídos
+- Mesma UI para fechar e excluir
+
+### Correções
+
+#### Bug do Renomear
+- Input de renomear funcionando corretamente
+- Enter salva, Escape cancela
+- Blur salva automaticamente
+
+#### Bug do Drag & Drop
+- Overlay não fica aberto após drop
+- Eventos não borbulham para main-layout
+- Só processa drag do sidebar ou externo
+
+---
+
+## Versão 0.0.5 - Busca, Substituição e Navegação Avançada
 
 ### Novas Funcionalidades
 
@@ -435,7 +512,19 @@ function App() {
   const MAX_HISTORY = 100;
   // Confirm modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [confirmModalData, setConfirmModalData] = useState<{ fileId: string; fileName: string } | null>(null);
+  const [confirmModalData, setConfirmModalData] = useState<{ fileId: string; fileName: string; action: 'close' | 'delete' } | null>(null);
+  // Drag & Drop state
+  const [isDragging, setIsDragging] = useState(false);
+  // Recent files state
+  const [recentFiles, setRecentFiles] = useState<RecentFile[]>(() => {
+    const saved = localStorage.getItem('dict-recent-files');
+    return saved ? JSON.parse(saved) : [];
+  });
+  // Favorite files state
+  const [favoriteFiles, setFavoriteFiles] = useState<string[]>(() => {
+    const saved = localStorage.getItem('dict-favorites');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [files, setFiles] = useState<FileData[]>(() => {
     // Lazy initialization - carrega do localStorage no estado inicial
     const savedFiles = localStorage.getItem('dict-files');
@@ -680,7 +769,7 @@ function App() {
         id: `tab-${Date.now()}`,
         fileId: file.id,
         name: file.name,
-        content: file.content,
+        content: file.content || '',
         isDirty: false
       };
       setTabs(prev => [...prev, newTab]);
@@ -980,7 +1069,7 @@ function App() {
       id: `tab-${id}`,
       fileId: id,
       name,
-      content: newFile.content,
+      content: newFile.content || '',
       isDirty: false
     };
     setTabs(prev => [...prev, newTab]);
@@ -1005,22 +1094,139 @@ function App() {
             content: event.target?.result as string
           };
           setFiles(prev => [...prev, newFile]);
-          
+
           const newTab: Tab = {
             id: `tab-${id}`,
             fileId: id,
             name: file.name,
-            content: newFile.content,
+            content: newFile.content || '',
             isDirty: false
           };
           setTabs(prev => [...prev, newTab]);
           setActiveTabId(newTab.id);
+          
+          // Adicionar aos recentes
+          addToRecentFiles({
+            id,
+            name: file.name,
+            content: event.target?.result as string,
+            lastOpened: Date.now()
+          });
         };
         reader.readAsText(file);
       }
     };
     input.click();
   }, []);
+
+  // Adicionar arquivo aos recentes
+  const addToRecentFiles = useCallback((recentFile: RecentFile) => {
+    setRecentFiles(prev => {
+      // Remove se já existe
+      const filtered = prev.filter(f => f.id !== recentFile.id);
+      // Adiciona no início
+      const updated = [recentFile, ...filtered].slice(0, 10); // Mantém últimos 10
+      localStorage.setItem('dict-recent-files', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  // Toggle favorite
+  const toggleFavorite = useCallback((fileId: string) => {
+    setFavoriteFiles(prev => {
+      const isFavorite = prev.includes(fileId);
+      const updated = isFavorite 
+        ? prev.filter(id => id !== fileId)
+        : [...prev, fileId];
+      localStorage.setItem('dict-favorites', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  // Criar nova pasta
+  const handleNewFolder = useCallback(() => {
+    const id = Date.now().toString();
+    const name = `Nova Pasta`;
+    const newFolder: FileData = {
+      id,
+      name,
+      type: 'folder',
+      parentId: undefined
+    };
+    setFiles(prev => [...prev, newFolder]);
+  }, []);
+
+  // Mover arquivo/pasta para pasta
+  const moveToFolder = useCallback((fileId: string, folderId: string | undefined) => {
+    setFiles(prev => prev.map(f => 
+      f.id === fileId ? { ...f, parentId: folderId } : f
+    ));
+  }, []);
+
+  // Handlers para Drag & Drop
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Só mostra overlay se não for do sidebar
+    const source = e.dataTransfer.getData('source');
+    if (source !== 'sidebar') {
+      setIsDragging(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    // Só processa se não for do sidebar
+    const source = e.dataTransfer.getData('source');
+    if (source === 'sidebar') {
+      return;
+    }
+    
+    const files = Array.from(e.dataTransfer.files);
+    files.forEach(file => {
+      if (file.name.endsWith('.md') || file.name.endsWith('.markdown') || file.name.endsWith('.txt')) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+          const newFile: FileData = {
+            id,
+            name: file.name,
+            type: 'file',
+            content: event.target?.result as string
+          };
+          setFiles(prev => [...prev, newFile]);
+
+          const newTab: Tab = {
+            id: `tab-${id}`,
+            fileId: id,
+            name: file.name,
+            content: newFile.content || '',
+            isDirty: false
+          };
+          setTabs(prev => [...prev, newTab]);
+          setActiveTabId(newTab.id);
+          
+          // Adicionar aos recentes
+          addToRecentFiles({
+            id,
+            name: file.name,
+            content: event.target?.result as string,
+            lastOpened: Date.now()
+          });
+        };
+        reader.readAsText(file);
+      }
+    });
+  }, [addToRecentFiles]);
 
   // Salvar arquivo
   const handleSave = useCallback(() => {
@@ -1069,7 +1275,7 @@ function App() {
       id: `tab-${id}`,
       fileId: id,
       name,
-      content: file.content,
+      content: file.content || '',
       isDirty: false
     };
     setTabs(prev => [...prev, newTab]);
@@ -1086,36 +1292,74 @@ function App() {
   const handleCloseFileFromExplorer = useCallback((fileId: string) => {
     const file = files.find(f => f.id === fileId);
     if (!file) return;
-    
-    setConfirmModalData({ fileId, fileName: file.name });
+
+    setConfirmModalData({ fileId, fileName: file.name, action: 'close' });
     setShowConfirmModal(true);
   }, [files]);
 
-  // Confirmar fechamento do arquivo
-  const handleConfirmCloseFile = useCallback(() => {
+  // Excluir arquivo/pasta do explorador
+  const handleDeleteFileFromExplorer = useCallback((fileId: string) => {
+    const file = files.find(f => f.id === fileId);
+    if (!file) return;
+
+    setConfirmModalData({ fileId, fileName: file.name, action: 'delete' });
+    setShowConfirmModal(true);
+  }, [files]);
+
+  // Confirmar ação do modal
+  const handleConfirmAction = useCallback(() => {
     if (!confirmModalData) return;
-    
-    const { fileId } = confirmModalData;
-    
-    // Fechar todas as tabs relacionadas a este arquivo
-    const tabsToClose = tabs.filter(t => t.fileId === fileId);
-    tabsToClose.forEach(tab => {
-      setTabs(prev => prev.filter(t => t.id !== tab.id));
-    });
-    
-    // Remover o arquivo da lista
-    setFiles(prev => prev.filter(f => f.id !== fileId));
-    
-    // Se o arquivo fechado era o ativo, selecionar outro
-    if (activeTabId && tabsToClose.some(t => t.id === activeTabId)) {
-      const remainingTabs = tabs.filter(t => t.fileId !== fileId);
-      if (remainingTabs.length > 0) {
-        setActiveTabId(remainingTabs[remainingTabs.length - 1].id);
-      } else {
-        setActiveTabId('');
+
+    const { fileId, action } = confirmModalData;
+
+    if (action === 'close') {
+      // Fechar todas as tabs relacionadas a este arquivo
+      const tabsToClose = tabs.filter(t => t.fileId === fileId);
+      tabsToClose.forEach(tab => {
+        setTabs(prev => prev.filter(t => t.id !== tab.id));
+      });
+
+      // Remover o arquivo da lista
+      setFiles(prev => prev.filter(f => f.id !== fileId));
+
+      // Se o arquivo fechado era o ativo, selecionar outro
+      if (activeTabId && tabsToClose.some(t => t.id === activeTabId)) {
+        const remainingTabs = tabs.filter(t => t.fileId !== fileId);
+        if (remainingTabs.length > 0) {
+          setActiveTabId(remainingTabs[remainingTabs.length - 1].id);
+        } else {
+          setActiveTabId('');
+        }
+      }
+    } else if (action === 'delete') {
+      // Fechar tabs relacionadas
+      const tabsToClose = tabs.filter(t => t.fileId === fileId);
+      tabsToClose.forEach(tab => {
+        setTabs(prev => prev.filter(t => t.id !== tab.id));
+      });
+
+      // Excluir arquivo e seus filhos (se for pasta)
+      const deleteRecursive = (id: string) => {
+        setFiles(prev => {
+          const children = prev.filter(f => f.parentId === id);
+          children.forEach(child => deleteRecursive(child.id));
+          return prev.filter(f => f.id !== id);
+        });
+      };
+
+      deleteRecursive(fileId);
+
+      // Selecionar outra aba se necessário
+      if (activeTabId && tabsToClose.some(t => t.id === activeTabId)) {
+        const remainingTabs = tabs.filter(t => t.fileId !== fileId);
+        if (remainingTabs.length > 0) {
+          setActiveTabId(remainingTabs[remainingTabs.length - 1].id);
+        } else {
+          setActiveTabId('');
+        }
       }
     }
-    
+
     setShowConfirmModal(false);
     setConfirmModalData(null);
   }, [confirmModalData, tabs, activeTabId]);
@@ -1371,7 +1615,22 @@ graph TD
   return (
     <div className="app-container">
       {/* Main Layout */}
-      <div className="main-layout">
+      <div 
+        className="main-layout"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {/* Drag Overlay */}
+        {isDragging && (
+          <div className="drag-overlay">
+            <div className="drag-message">
+              <span style={{ fontSize: '48px' }}>📁</span>
+              <p>Solte o arquivo aqui para abrir</p>
+            </div>
+          </div>
+        )}
+
         {/* Activity Bar */}
         <ActivityBar
           activeView={activeView}
@@ -1388,9 +1647,45 @@ graph TD
               activeFile={activeTab?.fileId || null}
               onFileSelect={openFileInTab}
               onNewFile={handleNewFile}
+              onNewFolder={handleNewFolder}
               onOpenFile={handleOpenFile}
               onRenameFile={handleRenameFile}
               onCloseFile={handleCloseFileFromExplorer}
+              onDeleteFile={handleDeleteFileFromExplorer}
+              onMoveToFolder={moveToFolder}
+              recentFiles={recentFiles}
+              onRecentFileSelect={(file) => {
+                // Re-abrir arquivo recente
+                const existingTab = tabs.find(t => t.fileId === file.id);
+                if (existingTab) {
+                  setActiveTabId(existingTab.id);
+                } else {
+                  // Adicionar arquivo aos arquivos atuais se não existir
+                  const existingFile = files.find(f => f.id === file.id);
+                  if (!existingFile) {
+                    // Criar o arquivo na lista de files
+                    const newFile: FileData = {
+                      id: file.id,
+                      name: file.name,
+                      type: 'file',
+                      content: file.content
+                    };
+                    setFiles(prev => [...prev, newFile]);
+                  }
+                  
+                  const newTab: Tab = {
+                    id: `tab-${file.id}`,
+                    fileId: file.id,
+                    name: file.name,
+                    content: file.content || '',
+                    isDirty: false
+                  };
+                  setTabs(prev => [...prev, newTab]);
+                  setActiveTabId(newTab.id);
+                }
+              }}
+              favoriteFiles={favoriteFiles}
+              onToggleFavorite={toggleFavorite}
             />
           </div>
         )}
@@ -1508,11 +1803,15 @@ graph TD
         {/* Confirm Modal */}
         {showConfirmModal && confirmModalData && (
           <ConfirmModal
-            title="Fechar arquivo"
-            message={`Deseja realmente fechar "${confirmModalData.fileName}"?`}
-            confirmText="Fechar"
+            title={confirmModalData.action === 'delete' ? 'Excluir arquivo' : 'Fechar arquivo'}
+            message={
+              confirmModalData.action === 'delete'
+                ? `Tem certeza que deseja excluir "${confirmModalData.fileName}"? ${files.find(f => f.id === confirmModalData.fileId)?.type === 'folder' ? 'Todos os arquivos dentro desta pasta também serão excluídos.' : ''}`
+                : `Deseja realmente fechar "${confirmModalData.fileName}"?`
+            }
+            confirmText={confirmModalData.action === 'delete' ? 'Excluir' : 'Fechar'}
             cancelText="Cancelar"
-            onConfirm={handleConfirmCloseFile}
+            onConfirm={handleConfirmAction}
             onCancel={() => {
               setShowConfirmModal(false);
               setConfirmModalData(null);

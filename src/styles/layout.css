@@ -13,6 +13,40 @@
   position: relative;
 }
 
+/* Drag Overlay */
+.drag-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(14, 165, 233, 0.1);
+  border: 3px dashed var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.drag-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 600;
+  background-color: var(--bg-secondary);
+  padding: 32px 48px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.drag-message p {
+  margin: 0;
+}
+
 /* Activity Bar (barra lateral esquerda com ícones) */
 .activity-bar {
   width: 48px;
@@ -168,6 +202,172 @@
   font-size: 13px;
   outline: none;
   border-radius: 4px;
+}
+
+/* Recent Files Section */
+.recent-files-section {
+  margin-bottom: 12px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.section-divider {
+  height: 1px;
+  background-color: var(--border);
+  margin: 8px 12px;
+}
+
+.recent-file {
+  font-size: 12px;
+  padding: 4px 12px;
+  opacity: 0.8;
+}
+
+.recent-file:hover {
+  opacity: 1;
+}
+
+.file-time {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+
+/* Favorite Files Section */
+.favorite-files-section {
+  margin-bottom: 12px;
+}
+
+.favorite-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.favorite-file .file-item-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.favorite-toggle {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.15s ease;
+}
+
+.favorite-file:hover .favorite-toggle,
+.file-item:hover .favorite-toggle {
+  opacity: 1;
+}
+
+.favorite-toggle:hover {
+  background-color: var(--hover-bg);
+}
+
+.star-filled {
+  color: #fbbf24;
+  fill: #fbbf24;
+}
+
+.file-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.file-item:hover .file-actions {
+  opacity: 1;
+}
+
+.folder-arrow {
+  font-size: 10px;
+  width: 12px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--text-secondary);
+  margin-right: 2px;
+}
+
+.files-tree {
+  display: flex;
+  flex-direction: column;
+}
+
+.folder-item {
+  cursor: pointer;
+}
+
+.folder-item.dragging {
+  opacity: 0.5;
+}
+
+.folder-item.drag-over {
+  background-color: var(--accent-glow);
+  border: 1px dashed var(--accent);
+}
+
+.folder-icon {
+  color: var(--text-secondary);
+}
+
+.drag-handle {
+  color: var(--text-secondary);
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.file-item:hover .drag-handle {
+  opacity: 1;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.file-action-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.15s ease;
+}
+
+.file-item:hover .file-action-btn {
+  opacity: 1;
+}
+
+.file-action-btn:hover {
+  background-color: var(--hover-bg);
 }
 
 /* Tabs */

@@ -1,6 +1,6 @@
-# dict - editor de markdown
-
 <div align="center">
+
+# dict - editor de markdown
 
 ![Versão](https://img.shields.io/badge/versão-0.0.5-blue)
 ![React](https://img.shields.io/badge/React-19.2.0-61dafb)
