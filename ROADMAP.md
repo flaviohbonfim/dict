@@ -15,6 +15,7 @@ Este documento contém o planejamento de desenvolvimento do **dict** desde a ver
 | 0.5.0  | ✅ Completa  | Busca, Substituição e Navegação    |
 | 0.6.0  | ✅ Completa  | Gerenciamento de Arquivos e Pastas |
 | 0.7.0  | ✅ Completa  | Março 2026                         |
+| 0.7.1  | ✅ Completa  | Março 2026                         |
 | 0.8.0  | 📋 Planejada | Exportação e Compartilhamento      |
 | 0.9.0  | 📋 Planejada | Personalização                     |
 | 1.0.0  | 📋 Planejada | Release Estável                    |
@@ -214,5 +215,5 @@ Total: 10 semanas (~2.5 meses) até a versão 1.0.0
 | Breadcrumb | Navegação hierárquica               | 📋     |
 
 **Última Atualização:** Março 2026
-**Versão Atual:** 0.7.0
+**Versão Atual:** 0.7.1
 **Próxima Versão:** 0.8.0 - Exportação e Compartilhamento

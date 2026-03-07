@@ -142,7 +142,16 @@ pie
 **Dica:** Use os atalhos de teclado para formatar seu texto mais rapidamente!
 `;
 
-const CHANGELOG = `## Versão 0.7.0 - Editor Avançado e Persistência de Workspace
+const CHANGELOG = `## Versão 0.7.1 - Correções de UX e Modais
+
+### Correções
+- Modais agora fecham na ordem correta (inversa à abertura) ao pressionar ESC
+- O painel de Configurações agora fecha ao clicar fora dele
+- Adicionado suporte a ESC no modal "Ir para Linha" de forma global
+
+---
+
+## Versão 0.7.0 - Editor Avançado e Persistência de Workspace
 
 ### Novas Funcionalidades
 
@@ -1666,14 +1675,10 @@ graph TD
     const handleKeyDown = (e: KeyboardEvent) => {
       // Fechar modais com ESC
       if (e.key === 'Escape') {
-        if (showSearch) {
+        if (showConfirmModal) {
           e.preventDefault();
-          setShowSearch(false);
-          return;
-        }
-        if (showSettings) {
-          e.preventDefault();
-          setShowSettings(false);
+          setShowConfirmModal(false);
+          setConfirmModalData(null);
           return;
         }
         if (showChangelog) {
@@ -1681,15 +1686,24 @@ graph TD
           setShowChangelog(false);
           return;
         }
+        if (showSettings) {
+          e.preventDefault();
+          setShowSettings(false);
+          return;
+        }
         if (showEmojiPicker) {
           e.preventDefault();
           setShowEmojiPicker(false);
           return;
         }
-        if (showConfirmModal) {
+        if (showSearch) {
           e.preventDefault();
-          setShowConfirmModal(false);
-          setConfirmModalData(null);
+          setShowSearch(false);
+          return;
+        }
+        if (showGoToLine) {
+          e.preventDefault();
+          setShowGoToLine(false);
           return;
         }
       }
@@ -1749,7 +1763,7 @@ graph TD
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showSearch, showSettings, showChangelog, showEmojiPicker, showConfirmModal, handleFormatDocument, handleSave, activeView, setViewMode, setActiveView, setShowSettings, setShowSearch, setShowGoToLine, setShowConfirmModal]);
+  }, [showSearch, showSettings, showChangelog, showEmojiPicker, showConfirmModal, showGoToLine, handleFormatDocument, handleSave, activeView, setViewMode, setActiveView, setShowSettings, setShowSearch, setShowGoToLine, setShowConfirmModal]);
 
   return (
     <div className="app-container">
@@ -1937,16 +1951,20 @@ graph TD
 
         {/* Settings Panel */}
         {showSettings && (
-          <SettingsPanel
-            theme={theme}
-            onThemeChange={setTheme}
-            onClose={() => setShowSettings(false)}
-            onOpenChangelog={() => setShowChangelog(true)}
-            syncScroll={syncScroll}
-            onSyncScrollChange={() => setSyncScroll(!syncScroll)}
-            autoSave={autoSaveEnabled}
-            onAutoSaveChange={() => setAutoSaveEnabled(!autoSaveEnabled)}
-          />
+          <div className="modal-overlay" onClick={() => setShowSettings(false)} style={{ justifyContent: 'flex-end', background: 'transparent' }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ height: '100%' }}>
+              <SettingsPanel
+                theme={theme}
+                onThemeChange={setTheme}
+                onClose={() => setShowSettings(false)}
+                onOpenChangelog={() => setShowChangelog(true)}
+                syncScroll={syncScroll}
+                onSyncScrollChange={() => setSyncScroll(!syncScroll)}
+                autoSave={autoSaveEnabled}
+                onAutoSaveChange={() => setAutoSaveEnabled(!autoSaveEnabled)}
+              />
+            </div>
+          </div>
         )}
 
         {/* Changelog Modal */}

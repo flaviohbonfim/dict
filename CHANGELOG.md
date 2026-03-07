@@ -7,6 +7,16 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [0.7.1] - 2026-03-07
+
+### 🐛 Correções de UX e Modais
+
+- Modais agora fecham na ordem correta (inversa à abertura) ao pressionar ESC.
+- O painel de Configurações agora fecha ao clicar fora dele (comportamento de modal).
+- Adicionado suporte a ESC no modal "Ir para Linha" de forma consistente.
+
+---
+
 ## [0.7.0] - Editor Avançado e Persistência de Workspace
 
 ### 🎉 Novas Funcionalidades
