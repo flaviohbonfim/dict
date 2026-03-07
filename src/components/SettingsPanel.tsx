@@ -1,4 +1,13 @@
-import { X, Moon, Sun, Keyboard, Info, FileText, Save, MoveVertical } from 'lucide-react';
+import {
+  X,
+  Moon,
+  Sun,
+  Keyboard,
+  Info,
+  FileText,
+  Save,
+  MoveVertical,
+} from "lucide-react";
 
 interface SettingsPanelProps {
   theme: string;
@@ -11,15 +20,15 @@ interface SettingsPanelProps {
   onAutoSaveChange: () => void;
 }
 
-export function SettingsPanel({ 
-  theme, 
-  onThemeChange, 
-  onClose, 
+export function SettingsPanel({
+  theme,
+  onThemeChange,
+  onClose,
   onOpenChangelog,
   syncScroll,
   onSyncScrollChange,
   autoSave,
-  onAutoSaveChange
+  onAutoSaveChange,
 }: SettingsPanelProps) {
   return (
     <div className="settings-panel">
@@ -37,26 +46,54 @@ export function SettingsPanel({
           </h3>
           <div className="theme-options">
             <button
-              className={`theme-option ${autoSave ? 'active' : ''}`}
+              className={`theme-option ${autoSave ? "active" : ""}`}
               onClick={() => onAutoSaveChange()}
             >
               <Save size={20} />
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                }}
+              >
                 <div style={{ fontWeight: 600 }}>Auto-save</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                  {autoSave ? 'Ativado - Salva automaticamente no localStorage' : 'Desativado - Clique para ativar'}
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "var(--text-secondary)",
+                    marginTop: "2px",
+                  }}
+                >
+                  {autoSave
+                    ? "Ativado - Salva automaticamente no localStorage"
+                    : "Desativado - Clique para ativar"}
                 </div>
               </div>
             </button>
             <button
-              className={`theme-option ${syncScroll ? 'active' : ''}`}
+              className={`theme-option ${syncScroll ? "active" : ""}`}
               onClick={() => onSyncScrollChange()}
             >
               <MoveVertical size={20} />
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                }}
+              >
                 <div style={{ fontWeight: 600 }}>Sync Scroll</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                  {syncScroll ? 'Ativado - Scroll sincronizado entre editor e preview' : 'Desativado - Clique para ativar'}
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "var(--text-secondary)",
+                    marginTop: "2px",
+                  }}
+                >
+                  {syncScroll
+                    ? "Ativado - Scroll sincronizado entre editor e preview"
+                    : "Desativado - Clique para ativar"}
                 </div>
               </div>
             </button>
@@ -70,23 +107,51 @@ export function SettingsPanel({
           </h3>
           <div className="theme-options">
             <button
-              className={`theme-option ${theme === 'dict-nord' ? 'active' : ''}`}
-              onClick={() => onThemeChange('dict-nord')}
+              className={`theme-option ${theme === "dict-nord" ? "active" : ""}`}
+              onClick={() => onThemeChange("dict-nord")}
             >
               <Moon size={20} />
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                }}
+              >
                 <div style={{ fontWeight: 600 }}>dict nord</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>Tema escuro inspirado no Nord</div>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "var(--text-secondary)",
+                    marginTop: "2px",
+                  }}
+                >
+                  Tema escuro inspirado no Nord
+                </div>
               </div>
             </button>
             <button
-              className={`theme-option ${theme === 'dict-light' ? 'active' : ''}`}
-              onClick={() => onThemeChange('dict-light')}
+              className={`theme-option ${theme === "dict-light" ? "active" : ""}`}
+              onClick={() => onThemeChange("dict-light")}
             >
               <Sun size={20} />
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                }}
+              >
                 <div style={{ fontWeight: 600 }}>dict light</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>Tema claro suave</div>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "var(--text-secondary)",
+                    marginTop: "2px",
+                  }}
+                >
+                  Tema claro suave
+                </div>
               </div>
             </button>
           </div>
@@ -167,13 +232,19 @@ export function SettingsPanel({
             Sobre o dict
           </h3>
           <div className="about-info">
-            <p><strong>dict</strong> é um editor de Markdown leve e moderno,</p>
+            <p>
+              <strong>dict</strong> é um editor de Markdown leve e moderno,
+            </p>
             <p>inspirado no VS Code, com suporte a diagramas Mermaid.</p>
             <br />
-            <p><strong>Versão:</strong> 0.0.6</p>
-            <p><strong>Tecnologias:</strong> React, TypeScript, Vite</p>
+            <p>
+              <strong>Versão:</strong> 0.6.0
+            </p>
+            <p>
+              <strong>Tecnologias:</strong> React, TypeScript, Vite
+            </p>
             <br />
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+            <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
               Desenvolvido com identidade visual exclusiva Dict
             </p>
           </div>

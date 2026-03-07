@@ -2,7 +2,7 @@
 
 # dict - editor de markdown
 
-![Versão](https://img.shields.io/badge/versão-0.0.5-blue)
+![Versão](https://img.shields.io/badge/versão-0.6.0-blue)
 ![React](https://img.shields.io/badge/React-19.2.0-61dafb)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-3178c6)
 ![Vite](https://img.shields.io/badge/Vite-7.3.1-646cff)
@@ -41,17 +41,20 @@ O **dict** é um editor de Markdown leve e moderno, inspirado no VS Code, desenv
 ### Passos
 
 1. **Clone o repositório:**
+
    ```bash
    git clone https://github.com/seu-usuario/dict.git
    cd dict
    ```
 
 2. **Instale as dependências:**
+
    ```bash
    npm install
    ```
 
 3. **Inicie o servidor de desenvolvimento:**
+
    ```bash
    npm run dev
    ```
@@ -65,31 +68,31 @@ O **dict** é um editor de Markdown leve e moderno, inspirado no VS Code, desenv
 
 ## 📦 Scripts Disponíveis
 
-| Comando | Descrição |
-|---------|-----------|
-| `npm run dev` | Inicia o servidor de desenvolvimento |
-| `npm run build` | Compila o projeto para produção |
-| `npm run preview` | Visualiza a build de produção |
-| `npm run lint` | Executa o linter ESLint |
+| Comando           | Descrição                            |
+| ----------------- | ------------------------------------ |
+| `npm run dev`     | Inicia o servidor de desenvolvimento |
+| `npm run build`   | Compila o projeto para produção      |
+| `npm run preview` | Visualiza a build de produção        |
+| `npm run lint`    | Executa o linter ESLint              |
 
 ---
 
 ## ⌨️ Atalhos de Teclado
 
-| Atalho | Ação |
-|--------|------|
-| `Ctrl + S` | Salvar arquivo |
-| `Ctrl + B` | Negrito |
-| `Ctrl + I` | Itálico |
-| `Ctrl + H` | Título |
-| `Ctrl + K` | Código inline |
-| `Ctrl + L` | Link |
-| `Ctrl + U` | Lista |
-| `Ctrl + \` | Alternar view (split/editor/preview) |
-| `Ctrl + Shift + E` | Alternar explorador |
-| `Ctrl + ,` | Abrir/Fechar configurações |
-| `ESC` | Fechar modais |
-| `Ctrl + Z` | Desfazer alteração |
+| Atalho             | Ação                                 |
+| ------------------ | ------------------------------------ |
+| `Ctrl + S`         | Salvar arquivo                       |
+| `Ctrl + B`         | Negrito                              |
+| `Ctrl + I`         | Itálico                              |
+| `Ctrl + H`         | Título                               |
+| `Ctrl + K`         | Código inline                        |
+| `Ctrl + L`         | Link                                 |
+| `Ctrl + U`         | Lista                                |
+| `Ctrl + \`         | Alternar view (split/editor/preview) |
+| `Ctrl + Shift + E` | Alternar explorador                  |
+| `Ctrl + ,`         | Abrir/Fechar configurações           |
+| `ESC`              | Fechar modais                        |
+| `Ctrl + Z`         | Desfazer alteração                   |
 
 ---
 
@@ -98,11 +101,13 @@ O **dict** é um editor de Markdown leve e moderno, inspirado no VS Code, desenv
 O dict possui dois temas exclusivos:
 
 ### Dict Nord (Padrão)
+
 - Tema escuro com tons de azul-acinzentado
 - Inspirado no popular tema Nord
 - Ideal para uso noturno
 
 ### Dict Light
+
 - Tema claro e suave
 - Perfeito para ambientes bem iluminados
 - Alto contraste para melhor legibilidade
@@ -114,25 +119,30 @@ O dict possui dois temas exclusivos:
 ## 📝 Recursos
 
 ### Editor
+
 - Numeração de linhas
 - Detecção de alterações não salvas
 - Múltiplas abas
 - Auto-save opcional
 
 ### Preview
+
 - Renderização em tempo real
 - Scroll sincronizado com o editor
 - Diagramas Mermaid
 - Syntax highlighting para código
 
 ### Emojis
+
 - Picker com +400 emojis
 - Busca por categoria
 - Shortcodes no formato `:emoji:`
 - Categorias: Smileys, Pessoas, Animais, Comida, Atividades, Viagem
 
 ### Mermaid
+
 Suporte a 7 tipos de diagramas com exemplos prontos:
+
 - Flowchart (Fluxograma)
 - Sequence (Sequência)
 - Class (Classes)
@@ -152,6 +162,7 @@ Instale a extensão **"Debugger for Chrome"** ou use o debugger built-in do VS C
 ### 2. Configure o launch.json
 
 O arquivo `.vscode/launch.json` já está configurado com 2 opções:
+
 - **Dict: Debug no Chrome**
 - **Dict: Debug no Edge**
 
@@ -160,6 +171,7 @@ O arquivo `.vscode/launch.json` já está configurado com 2 opções:
 **Opção 1 - Iniciar manualmente:**
 
 1. No terminal, execute:
+
    ```bash
    npm run dev
    ```
@@ -254,7 +266,6 @@ dict/
 - **Marked** - Parser Markdown
 - **Mermaid** - Diagramas
 - **Highlight.js** - Syntax highlighting
-
 
 ---
 

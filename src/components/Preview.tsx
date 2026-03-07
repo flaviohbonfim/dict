@@ -13,9 +13,10 @@ interface PreviewProps {
   externalScrollPercentage?: number;
   scrollSource: 'editor' | 'preview' | null;
   theme: string;
+  onScroll?: (percentage: number) => void;
 }
 
-export function Preview({ content, syncScroll, onScrollSync, externalScrollPercentage, scrollSource, theme }: PreviewProps) {
+export function Preview({ content, syncScroll, onScrollSync, externalScrollPercentage, scrollSource, theme, onScroll }: PreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const isUpdatingScroll = useRef(false);
   const lastSyncPercentage = useRef<number>(-1);
@@ -69,6 +70,12 @@ export function Preview({ content, syncScroll, onScrollSync, externalScrollPerce
   const handlePreviewScroll = useCallback(() => {
     if (!previewRef.current) return;
 
+    // Envia scroll para o minimapa (sempre)
+    if (onScroll) {
+      const percentage = getScrollPercentage();
+      onScroll(percentage);
+    }
+
     // Se é atualização externa, não propaga
     if (isUpdatingScroll.current) {
       return;
@@ -88,7 +95,7 @@ export function Preview({ content, syncScroll, onScrollSync, externalScrollPerce
 
     lastSyncPercentage.current = percentage;
     onScrollSync(percentage);
-  }, [syncScroll, onScrollSync, getScrollPercentage]);
+  }, [syncScroll, onScrollSync, getScrollPercentage, onScroll]);
 
   // Renderiza o preview com debounce
   useEffect(() => {

@@ -7,17 +7,19 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
-## [0.0.6] - Gerenciamento de Arquivos e Organização por Pastas
+## [0.6.0] - Gerenciamento de Arquivos e Organização por Pastas
 
 ### 🎉 Novas Funcionalidades
 
 #### Arrastar e Soltar (Drag & Drop)
+
 - Importar arquivos arrastando do computador
 - Overlay visual com mensagem ao arrastar
 - Aceita arquivos .md, .markdown e .txt
 - Abertura automática ao soltar
 
 #### Histórico de Arquivos Recentes
+
 - Lista dos últimos 10 arquivos abertos
 - Exibido na sidebar com ícone de relógio
 - Tempo decorrido ("5min atrás", "2h atrás", "3d atrás")
@@ -25,6 +27,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Persiste no localStorage
 
 #### Sistema de Favoritos
+
 - Marcar arquivos como favoritos com estrela ⭐
 - Seção dedicada no topo da sidebar
 - Estrela dourada quando é favorito
@@ -32,6 +35,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Persiste no localStorage
 
 #### Organização por Pastas
+
 - Criar pastas para organizar arquivos
 - Estrutura hierárquica com indentação visual
 - Expandir/recolher pastas (▶/▼)
@@ -45,18 +49,21 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ### ✨ Melhorias de UX
 
 #### Interface Padronizada
+
 - Todos os ícones na mesma cor (var(--text-secondary))
 - Botões de ação com hover consistente
 - Sem cores vermelhas (mantém padrão do tema)
 - Ícones Lucide em todo o app
 
 #### Drag & Drop Inteligente
+
 - Overlay só aparece ao arrastar de FORA do app
 - Ao arrastar do sidebar, overlay não aparece
 - Dados transferidos com metadados (source, fileId)
 - Stop propagation para não "borbulhar" eventos
 
 #### Confirmação de Exclusão
+
 - Modal customizado (não usa confirm() nativo)
 - Mensagem contextual para pastas
 - Avisa que filhos serão excluídos
@@ -65,22 +72,25 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ### 🐛 Correções
 
 #### Bug do Renomear
+
 - Input de renomear funcionando corretamente
 - Enter salva, Escape cancela
 - Blur salva automaticamente
 
 #### Bug do Drag & Drop
+
 - Overlay não fica aberto após drop
 - Eventos não borbulham para main-layout
 - Só processa drag do sidebar ou externo
 
 ---
 
-## [0.0.5] - Busca, Substituição e Navegação Avançada
+## [0.5.0] - Busca, Substituição e Navegação Avançada
 
 ### 🎉 Novas Funcionalidades
 
 #### Buscar no Arquivo (Ctrl+F)
+
 - Barra de busca estilo VSCode
 - Highlights visuais em todos os matches (azul ciano Nord)
 - Match atual destacado com cor mais forte e borda
@@ -91,6 +101,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Highlights limpam ao fechar busca
 
 #### Substituir (Ctrl+H)
+
 - Integrado com a busca
 - Campo de substituição abaixo da busca
 - Substituir ocorrência individual
@@ -98,18 +109,21 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Layout inspirado no VSCode
 
 #### Ir para Linha (Ctrl+G)
+
 - Modal de navegação rápida
 - Digite o número da linha
 - Navegação instantânea
 - Fecha com ESC
 
 #### Refazer (Ctrl+Y)
+
 - Sistema completo de Undo/Redo
 - Histórico de até 100 alterações
 - Suporte para Ctrl+Y e Ctrl+Shift+Z
 - Limpa ao fazer nova alteração
 
 #### Contagem de Tempo de Leitura
+
 - Estimativa de tempo na StatusBar
 - Baseado em 200 palavras por minuto
 - Exibido ao lado da contagem de palavras
@@ -117,17 +131,20 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ### ✨ Melhorias de UX
 
 #### Highlights de Busca
+
 - Cores do tema Nord (azul ciano)
 - Match atual mais forte com borda
 - Highlights sincronizam com scroll
 - Limpam ao fechar busca ou apagar pesquisa
 
 #### Navegação Circular
+
 - Enter no último → volta pro primeiro
 - Shift+Enter no primeiro → vai pro último
 - Scroll automático para o match
 
 #### Interface de Busca
+
 - Botões de opção estilizados (sem checkboxes)
 - Ícones para Case Sensitive e Palavra Inteira
 - Contador "X de Y" ou "Sem resultados"
@@ -136,28 +153,32 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ### 🐛 Correções
 
 #### Bug do Contador
+
 - Contador zera ao apagar pesquisa
 - Highlights limpam ao fechar busca
 - Query vazia limpa resultados imediatamente
 
 #### Bug do EmojiPicker
+
 - Emojis duplicados removidos (lobster, shrimp, squid, oyster)
 - Scroll adicionado para ver todos emojis
 - Categorias não cortam mais
 - Atualização correta ao mudar categoria
 
 #### Bug do Preview
+
 - Código não escapa aspas duplas
 - JavaScript e JSON renderizam corretamente
 - Syntax highlighting mantido
 
 ---
 
-## [0.0.4] - Emojis, Submenus e Melhorias de UX
+## [0.4.0] - Emojis, Submenus e Melhorias de UX
 
 ### 🎉 Novas Funcionalidades
 
 #### Suporte a Emojis
+
 - Picker de emojis com busca e categorias
 - +400 emojis comuns disponíveis
 - Shortcodes no formato `:emoji:` (ex: `:joy:`, `:smile:`)
@@ -166,6 +187,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Botão "Emoji" na toolbar para acesso rápido
 
 #### Submenus na Toolbar
+
 - **Títulos**: H1, H2, H3 com um clique
 - **Mermaid**: 7 tipos de diagramas com exemplos prontos:
   - Flowchart (Fluxograma)
@@ -177,15 +199,18 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   - Journey (Jornada do Usuário)
 
 #### Menu de Contexto do Preview
+
 - Menu customizado para o preview
 - Opções: Selecionar Tudo, Copiar
 - Diferente do menu do editor (foco em visualização)
 
 #### Persistência de Estado
+
 - Sidebar salva estado (aberto/fechado) no localStorage
 - Recarregue a página e o estado é mantido
 
 #### Modal de Confirmação Customizado
+
 - Design minimalista seguindo o tema Dict Nord
 - Confirmação para fechar arquivos
 - Sem modais nativos do browser
@@ -193,23 +218,27 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ### ✨ Melhorias de UX
 
 #### Atalhos de Teclado
+
 - **ESC**: Fecha qualquer modal (Settings, Changelog, Emoji Picker, Confirmação)
 - **Ctrl+,**: Alterna painel de configurações (abre/fecha)
 - Ícone de configurações destaca quando aberto
 
 #### Interface
+
 - Titlebar removida para layout mais limpo
 - Botão "×" para fechar arquivos no explorador
 - Fundo da sidebar corrigido (sem áreas escuras)
 - Scrollbar do preview não interfere mais ao digitar
 
 #### Identidade Visual
+
 - Tema Dict Nord (azul-acinzentado)
 - Tema Dict Light (claro suave)
 - Favicon com "d" minúsculo
 - Cores consistentes em todos os componentes
 
 ### 🐛 Correções
+
 - Diagramas Mermaid ER e Class funcionando
 - Auto-save sem loop infinito
 - Linha/coluna atualizando em tempo real
@@ -217,11 +246,12 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
-## [0.0.3] - Auto-save, Syntax Highlighting e Identidade Visual
+## [0.3.0] - Auto-save, Syntax Highlighting e Identidade Visual
 
 ### 🎉 Novas Funcionalidades
 
 #### Auto-save
+
 - Salvamento automático no localStorage
 - Recupera arquivos ao reabrir o aplicativo
 - Botão "Auto-save" na toolbar para ativar/desativar
@@ -230,17 +260,20 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Mensagens: "Salvo agora", "Salvo há Xs", "Salvo há Xmin"
 
 #### Contagem de Palavras
+
 - Exibição de contagem de palavras na barra de status
 - Contagem em tempo real enquanto digita
 - Métricas: palavras, caracteres, linhas
 
 #### Realce de Sintaxe
+
 - Highlight.js integrado para blocos de código
 - Suporte a múltiplas linguagens (JavaScript, Python, CSS, HTML, etc.)
 - Tema Atom One Dark para melhor legibilidade
 - Detecção automática de linguagem
 
 #### Identidade Visual Dict
+
 - Novo tema "Dict Nord" - Tema escuro inspirado no Nord (tons de azul-acinzentado)
 - Novo tema "Dict Light" - Tema claro suave
 - Cores customizadas em todos os componentes
@@ -251,6 +284,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Títulos e links com cor accent
 
 ### 🔧 Melhorias Técnicas
+
 - Preview com debounce de 500ms
 - Scroll sync otimizado
 - Lazy initialization do estado
@@ -258,28 +292,32 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Integração com Mermaid mantida
 
 ### 🐛 Correções
+
 - Scrollbar do preview não se mexe mais ao digitar
 - Auto-save sem loop infinito
 - Dirty indicator atualizado corretamente
 
 ---
 
-## [0.0.2] - Sincronização de Scroll
+## [0.2.0] - Sincronização de Scroll
 
 ### 🎉 Novas Funcionalidades
 
 #### Sincronização de Scroll
+
 - Scroll sincronizado entre editor e preview
 - Botão "Sync Scroll" na toolbar para ativar/desativar
 - Rolagem simultânea em ambos os painéis no modo split
 - Algoritmo de sincronização baseado em porcentagem
 
 #### Melhorias de Interface
+
 - Removido seletor de tema da toolbar principal
 - Tema agora acessível apenas pelo painel de Configurações
 - Toolbar mais limpa e focada em edição
 
 ### 🐛 Correções
+
 - Sincronização de scroll bidirecional totalmente revisada
 - Prevenção de conflitos de scroll entre painéis
 - Correção do canto das scrollbars (scrollbar corner)
@@ -289,11 +327,12 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
-## [0.0.1] - Lançamento Inicial
+## [0.1.0] - Lançamento Inicial
 
 ### 🎉 Funcionalidades Implementadas
 
 #### Editor
+
 - Editor de texto Markdown com numeração de linhas
 - Preview em tempo real do conteúdo renderizado
 - Suporte a diagramas Mermaid (fluxograma, sequência, pizza, etc.)
@@ -301,6 +340,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Detecção de alterações não salvas (dirty state)
 
 #### Interface
+
 - Layout inspirado no VS Code
 - Activity bar lateral simplificada
 - Sidebar com explorador de arquivos
@@ -309,6 +349,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Menu de contexto customizado (botão direito)
 
 #### Gerenciamento de Arquivos
+
 - Criar novos arquivos
 - Abrir arquivos .md do sistema
 - Salvar arquivos (download)
@@ -317,6 +358,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Fechar arquivos
 
 #### Atalhos de Teclado
+
 - Ctrl+B: Negrito
 - Ctrl+I: Itálico
 - Ctrl+H: Título
@@ -328,6 +370,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Ctrl+Shift+E: Alternar explorador
 
 #### Configurações
+
 - Painel de configurações estilo VS Code
 - Seletor de temas
 - Lista de atalhos de teclado

@@ -12,6 +12,7 @@ import { ConfirmModal } from './components/ConfirmModal';
 import { ChangelogModal } from './components/ChangelogModal';
 import { EmojiPickerComponent } from './components/EmojiPicker';
 import { SearchBar } from './components/SearchBar';
+import { Minimap } from './components/Minimap';
 import './styles/global.css';
 import './styles/layout.css';
 
@@ -140,7 +141,7 @@ pie
 **Dica:** Use os atalhos de teclado para formatar seu texto mais rapidamente!
 `;
 
-const CHANGELOG = `## Versão 0.0.6 - Gerenciamento de Arquivos e Organização por Pastas
+const CHANGELOG = `## Versão 0.6.0 - Gerenciamento de Arquivos e Organização por Pastas
 
 ### Novas Funcionalidades
 
@@ -209,7 +210,7 @@ const CHANGELOG = `## Versão 0.0.6 - Gerenciamento de Arquivos e Organização 
 
 ---
 
-## Versão 0.0.5 - Busca, Substituição e Navegação Avançada
+## Versão 0.5.0 - Busca, Substituição e Navegação Avançada
 
 ### Novas Funcionalidades
 
@@ -286,7 +287,7 @@ const CHANGELOG = `## Versão 0.0.6 - Gerenciamento de Arquivos e Organização 
 
 ---
 
-## Versão 0.0.4 - Emojis, Submenus e Melhorias de UX
+## Versão 0.4.0 - Emojis, Submenus e Melhorias de UX
 
 ### Novas Funcionalidades
 
@@ -351,7 +352,7 @@ const CHANGELOG = `## Versão 0.0.6 - Gerenciamento de Arquivos e Organização 
 
 ---
 
-## Versão 0.0.3 - Auto-save, Syntax Highlighting e Identidade Visual
+## Versão 0.3.0 - Auto-save, Syntax Highlighting e Identidade Visual
 
 ### Novas Funcionalidades
 
@@ -399,7 +400,7 @@ const CHANGELOG = `## Versão 0.0.6 - Gerenciamento de Arquivos e Organização 
 
 ---
 
-## Versão 0.0.2 - Sincronização de Scroll
+## Versão 0.2.0 - Sincronização de Scroll
 
 ### Novas Funcionalidades
 
@@ -424,7 +425,7 @@ const CHANGELOG = `## Versão 0.0.6 - Gerenciamento de Arquivos e Organização 
 
 ---
 
-## Versão 0.0.1 - Lançamento Inicial
+## Versão 0.1.0 - Lançamento Inicial
 
 ### Funcionalidades Implementadas
 
@@ -496,6 +497,11 @@ function App() {
   const [mermaidMenuOpen, setMermaidMenuOpen] = useState(false);
   const [headingMenuPosition, setHeadingMenuPosition] = useState({ x: 0, y: 0 });
   const [mermaidMenuPosition, setMermaidMenuPosition] = useState({ x: 0, y: 0 });
+  const [showMinimap, setShowMinimap] = useState(() => {
+    const saved = localStorage.getItem('dict-minimap');
+    return saved !== 'false'; // Default true se não tiver salvo
+  });
+  const [editorScrollPercentage, setEditorScrollPercentage] = useState(0);
   // Search state
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -614,6 +620,11 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('dict-theme', theme);
   }, [theme]);
+
+  // Salvar estado do minimapa no localStorage
+  useEffect(() => {
+    localStorage.setItem('dict-minimap', String(showMinimap));
+  }, [showMinimap]);
 
   // Salvar estado do sidebar no localStorage
   useEffect(() => {
@@ -1415,6 +1426,23 @@ function App() {
     }, 0);
   }, [activeTab, handleContentChange, updateCursorPosition]);
 
+  // Handler para clique no minimapa
+  const handleMinimapClick = useCallback((percentage: number) => {
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    const preview = document.querySelector('.preview-content') as HTMLDivElement;
+    
+    if (textarea) {
+      const maxScroll = textarea.scrollHeight - textarea.clientHeight;
+      textarea.scrollTop = percentage * maxScroll;
+      textarea.focus();
+    }
+    
+    if (preview) {
+      const maxScroll = preview.scrollHeight - preview.clientHeight;
+      preview.scrollTop = percentage * maxScroll;
+    }
+  }, []);
+
   const handleBold = () => insertFormatting('**', '**');
   const handleItalic = () => insertFormatting('*', '*');
   const handleCode = () => insertFormatting('`', '`');
@@ -1720,16 +1748,18 @@ graph TD
             mermaidMenuOpen={mermaidMenuOpen}
             mermaidMenuPosition={mermaidMenuPosition}
             onEmoji={handleEmoji}
+            showMinimap={showMinimap}
+            onToggleMinimap={() => setShowMinimap(!showMinimap)}
           />
 
           {/* Editor Split View */}
           <div
             ref={editorRef}
-            className={`editor-split view-${viewMode}`}
+            className={`editor-split view-${viewMode} ${showMinimap ? 'with-minimap' : ''}`}
           >
             {activeTab && (
               <>
-                <div 
+                <div
                   className="editor-pane"
                   onContextMenu={(e) => handleContextMenu(e, 'editor')}
                 >
@@ -1747,9 +1777,12 @@ graph TD
                     searchQuery={searchQuery}
                     searchMatches={searchMatches}
                     currentMatchIndex={currentMatchIndex}
+                    onScroll={(percentage) => {
+                      setEditorScrollPercentage(percentage);
+                    }}
                   />
                 </div>
-                <div 
+                <div
                   className="preview-pane"
                   onContextMenu={(e) => handleContextMenu(e, 'preview')}
                 >
@@ -1763,8 +1796,20 @@ graph TD
                     externalScrollPercentage={scrollSource === 'editor' ? scrollPercentage : undefined}
                     scrollSource={scrollSource}
                     theme={theme}
+                    onScroll={(percentage) => {
+                      setEditorScrollPercentage(percentage);
+                    }}
                   />
                 </div>
+                {showMinimap && viewMode !== 'editor' && (
+                  <div className="minimap-pane">
+                    <Minimap
+                      content={activeTab.content}
+                      editorScrollPercentage={editorScrollPercentage}
+                      onMinimapClick={handleMinimapClick}
+                    />
+                  </div>
+                )}
               </>
             )}
             {!activeTab && (

@@ -1,4 +1,4 @@
-import { Code, Link, List, GitGraph, Edit, Columns, Eye, Bold, Italic, Heading, Smile, ChevronDown } from 'lucide-react';
+import { Code, Link, List, GitGraph, Edit, Columns, Eye, Bold, Italic, Heading, Smile, ChevronDown, PanelLeft } from 'lucide-react';
 
 interface EditorToolbarProps {
   viewMode: 'split' | 'editor' | 'preview';
@@ -17,6 +17,8 @@ interface EditorToolbarProps {
   mermaidMenuOpen: boolean;
   mermaidMenuPosition: { x: number; y: number };
   onEmoji: () => void;
+  showMinimap: boolean;
+  onToggleMinimap: () => void;
 }
 
 export function EditorToolbar({
@@ -36,6 +38,8 @@ export function EditorToolbar({
   mermaidMenuOpen,
   mermaidMenuPosition,
   onEmoji,
+  showMinimap,
+  onToggleMinimap,
 }: EditorToolbarProps) {
   return (
     <div className="editor-toolbar">
@@ -88,6 +92,11 @@ export function EditorToolbar({
       <button className="toolbar-btn" onClick={onEmoji} title="Inserir Emoji">
         <Smile size={14} />
         <span>Emoji</span>
+      </button>
+
+      <button className="toolbar-btn" onClick={onToggleMinimap} title={showMinimap ? 'Ocultar Minimapa' : 'Mostrar Minimapa'}>
+        <PanelLeft size={14} />
+        <span>Minimap</span>
       </button>
 
       <div className="toolbar-divider"></div>

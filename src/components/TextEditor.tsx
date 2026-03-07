@@ -1,4 +1,5 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
+import { Autocomplete } from './Autocomplete';
 
 interface TextEditorProps {
   value: string;
@@ -11,24 +12,31 @@ interface TextEditorProps {
   searchQuery?: string;
   searchMatches?: { start: number; end: number }[];
   currentMatchIndex?: number;
+  onScroll?: (percentage: number) => void;
 }
 
-export function TextEditor({ 
-  value, 
-  onChange, 
-  onSave, 
-  syncScroll, 
-  onScrollSync, 
+export function TextEditor({
+  value,
+  onChange,
+  onSave,
+  syncScroll,
+  onScrollSync,
   externalScrollPercentage,
   scrollSource,
   searchQuery = '',
   searchMatches = [],
-  currentMatchIndex = -1
+  currentMatchIndex = -1,
+  onScroll
 }: TextEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
   const isUpdatingScroll = useRef(false);
   const highlightLayerRef = useRef<HTMLDivElement>(null);
+  
+  // Autocomplete state
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [autocompleteTrigger, setAutocompleteTrigger] = useState('');
+  const [autocompletePosition, setAutocompletePosition] = useState({ x: 0, y: 0 });
 
   const lineCount = value.split('\n').length;
   const lines = Array.from({ length: Math.max(lineCount, 1) }, (_, i) => i + 1);
@@ -48,11 +56,20 @@ export function TextEditor({
 
   // Handler de scroll
   const handleScroll = useCallback((e: React.UIEvent<HTMLTextAreaElement>) => {
+    // Hide autocomplete on scroll
+    setShowAutocomplete(false);
+    
     const textarea = e.currentTarget;
 
     // Sincroniza line numbers
     if (lineNumbersRef.current) {
       lineNumbersRef.current.scrollTop = textarea.scrollTop;
+    }
+
+    // Envia scroll para o minimapa (sempre)
+    if (onScroll) {
+      const percentage = getScrollPercentage();
+      onScroll(percentage);
     }
 
     // Se é atualização externa, não propaga
@@ -64,10 +81,83 @@ export function TextEditor({
       return;
     }
 
-    // Calcula e envia porcentagem de scroll
+    // Calcula e envia porcentagem de scroll para sync
     const percentage = getScrollPercentage();
     onScrollSync(percentage);
-  }, [syncScroll, onScrollSync, getScrollPercentage]);
+  }, [syncScroll, onScrollSync, getScrollPercentage, onScroll]);
+
+  // Detectar trigger de autocomplete
+  const checkAutocompleteTrigger = useCallback((text: string, cursorPos: number) => {
+    const lineStart = text.lastIndexOf('\n', cursorPos - 1) + 1;
+    const currentLine = text.substring(lineStart, cursorPos);
+    
+    // Check for triggers
+    const triggers = ['#', '-', '*', '`', '>', '---', '|', '![' , '['];
+    for (const trigger of triggers) {
+      if (currentLine === trigger || (trigger.length > 1 && currentLine.endsWith(trigger))) {
+        return trigger;
+      }
+    }
+    return null;
+  }, []);
+
+  // Inserir texto do autocomplete
+  const handleAutocompleteSelect = useCallback((insertText: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const cursorPos = textarea.selectionStart;
+    const trigger = autocompleteTrigger;
+    
+    // Calcular onde começa o trigger
+    const textBefore = value.substring(0, cursorPos);
+    const lineStart = textBefore.lastIndexOf('\n') + 1;
+    const triggerStart = lineStart + textBefore.substring(lineStart).lastIndexOf(trigger);
+    
+    // Substituir trigger pelo texto completo
+    const newValue = value.substring(0, triggerStart) + insertText + value.substring(cursorPos);
+    onChange(newValue);
+
+    setShowAutocomplete(false);
+    setAutocompleteTrigger('');
+
+    setTimeout(() => {
+      textarea.focus();
+      // Posicionar cursor após o texto inserido
+      const newCursorPos = triggerStart + insertText.length;
+      textarea.selectionStart = textarea.selectionEnd = newCursorPos;
+    }, 0);
+  }, [value, onChange, autocompleteTrigger]);
+
+  // Handler para mudança de conteúdo com detecção de autocomplete
+  const handleContentChange = useCallback((newValue: string) => {
+    onChange(newValue);
+    
+    // Detectar trigger de autocomplete
+    const textarea = textareaRef.current;
+    if (textarea) {
+      const cursorPos = textarea.selectionStart;
+      const trigger = checkAutocompleteTrigger(newValue, cursorPos);
+      
+      if (trigger) {
+        // Calcular posição do popup
+        const lineHeight = 22.4;
+        const textBefore = newValue.substring(0, cursorPos);
+        const lines = textBefore.split('\n');
+        const lineNumber = lines.length - 1;
+        const columnNumber = lines[lines.length - 1].length;
+        
+        setAutocompleteTrigger(trigger);
+        setAutocompletePosition({
+          x: 100 + (columnNumber * 8.4), // char width approx
+          y: 50 + (lineNumber * lineHeight),
+        });
+        setShowAutocomplete(true);
+      } else {
+        setShowAutocomplete(false);
+      }
+    }
+  }, [onChange, checkAutocompleteTrigger]);
 
   // Scroll externo
   useEffect(() => {
@@ -185,6 +275,13 @@ export function TextEditor({
   }, [searchQuery, searchMatches, currentMatchIndex, value]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Fechar autocomplete com Escape
+    if (e.key === 'Escape' && showAutocomplete) {
+      setShowAutocomplete(false);
+      setAutocompleteTrigger('');
+      return;
+    }
+
     // Tabulação
     if (e.key === 'Tab') {
       e.preventDefault();
@@ -261,13 +358,23 @@ export function TextEditor({
           ref={textareaRef}
           className="text-editor"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => handleContentChange(e.target.value)}
           onScroll={handleScroll}
           onKeyDown={handleKeyDown}
           spellCheck={false}
           placeholder="Digite seu Markdown aqui..."
         />
       </div>
+      
+      {/* Autocomplete Popup */}
+      {showAutocomplete && (
+        <Autocomplete
+          trigger={autocompleteTrigger}
+          position={autocompletePosition}
+          onSelect={handleAutocompleteSelect}
+          onClose={() => setShowAutocomplete(false)}
+        />
+      )}
     </div>
   );
 }
