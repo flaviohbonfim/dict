@@ -14,7 +14,7 @@ Este documento contém o planejamento de desenvolvimento do **dict** desde a ver
 | 0.4.0  | ✅ Completa  | Emojis e Submenus                  |
 | 0.5.0  | ✅ Completa  | Busca, Substituição e Navegação    |
 | 0.6.0  | ✅ Completa  | Gerenciamento de Arquivos e Pastas |
-| 0.7.0  | 📋 Planejada | Editor Avançado                    |
+| 0.7.0  | ✅ Completa  | Março 2026                         |
 | 0.8.0  | 📋 Planejada | Exportação e Compartilhamento      |
 | 0.9.0  | 📋 Planejada | Personalização                     |
 | 1.0.0  | 📋 Planejada | Release Estável                    |
@@ -47,25 +47,24 @@ Este documento contém o planejamento de desenvolvimento do **dict** desde a ver
 
 ---
 
-## 🎯 Próximas Versões
+## 🎯 Versão 0.7.0 - COMPLETA ✅
 
-### Versão 0.7.0 - Editor Avançado
+**Foco:** Recursos profissionais de edição e robustez do sistema
 
-**Foco:** Recursos profissionais de edição
-
-| Feature            | Descrição                           | Prioridade | Status |
-| ------------------ | ----------------------------------- | ---------- | ------ |
-| Minimapa           | Visão geral do documento            | 🔴 Alta    | 📋     |
-| Snippets           | Templates de Markdown pré-definidos | 🔴 Alta    | 📋     |
-| Auto-complete      | Sugestões de sintaxe Markdown       | 🟡 Média   | 📋     |
-| Formatar Documento | Padronizar formatação               | 🟡 Média   | 📋     |
-| Breadcrumb         | Navegação hierárquica               | 🟢 Baixa   | 📋     |
+| Feature            | Descrição                             | Prioridade | Status |
+| ------------------ | ------------------------------------- | ---------- | ------ |
+| Minimapa Smart     | Visão geral com visibilidade dinâmica | 🔴 Alta    | ✅     |
+| Auto-complete      | Sugestões de sintaxe e +800 emojis    | 🔴 Alta    | ✅     |
+| Formatar Documento | Padronização e limpeza de espaços     | 🟡 Média   | ✅     |
+| Persistência Total | Salvar abas, estado e workspace       | 🔴 Alta    | ✅     |
+| Context Menus      | Atalhos rápidos no editor e explorer  | 🟡 Média   | ✅     |
 
 **Benefícios:**
 
-- Edição mais rápida com snippets
-- Visão geral de documentos longos
-- Markdown consistente e padronizado
+- Edição profissional fluida e assistida
+- Recuperação instantânea de workspace após crash/reload
+- Markdown padronizado seguindo boas práticas
+- Interface limpa com seções colapsáveis na sidebar
 
 **Duração Estimada:** 2 semanas
 
@@ -147,7 +146,7 @@ Este documento contém o planejamento de desenvolvimento do **dict** desde a ver
 │  Semana  │  Versão  │  Foco                                │
 ├──────────┼──────────┼──────────────────────────────────────┤
 │  1-2     │  0.6.0   │  Gerenciamento de Arquivos ✅        │
-│  3-4     │  0.7.0   │  Editor Avançado                     │
+│  3-4     │  0.7.0   │  Editor Avançado ✅                 │
 │  5-6     │  0.8.0   │  Exportação e Compartilhamento       │
 │  7-8     │  0.9.0   │  Personalização                      │
 │  9-10    │  1.0.0   │  Release Estável + Polimento         │
@@ -158,24 +157,11 @@ Total: 10 semanas (~2.5 meses) até a versão 1.0.0
 
 ---
 
-## 🚀 Próximos Passos Imediatos
+1. **Minimapa, Auto-complete e Formatação** (v0.7.0 ✅)
+   - Visão geral, sugestões inteligentes e padronização.
 
-### Para Versão 0.7.0:
-
-1. **Minimapa** (Prioridade Máxima)
-   - Implementar visão geral do documento
-   - Scroll sincronizado com editor
-   - Highlight da área visível
-
-2. **Snippets** (Prioridade Alta)
-   - Templates de Markdown pré-definidos
-   - Atalhos para inserção rápida
-   - Snippets customizáveis
-
-3. **Auto-complete** (Prioridade Média)
-   - Sugestões de sintaxe Markdown
-   - Headers, listas, code blocks
-   - Trigger automático ou manual
+2. **Persistência de Workspace** (v0.7.0 ✅)
+   - Abas e estado do editor salvos no recarregamento.
 
 ---
 
@@ -218,6 +204,15 @@ Total: 10 semanas (~2.5 meses) até a versão 1.0.0
 
 ---
 
-**Última Atualização:** Março 2024
-**Versão Atual:** 0.6.0
-**Próxima Versão:** 0.7.0 - Editor Avançado
+---
+
+## 📂 Backlog (Sem versão definida)
+
+| Feature    | Descrição                           | Status |
+| ---------- | ----------------------------------- | ------ |
+| Snippets   | Templates de Markdown pré-definidos | 📋     |
+| Breadcrumb | Navegação hierárquica               | 📋     |
+
+**Última Atualização:** Março 2026
+**Versão Atual:** 0.7.0
+**Próxima Versão:** 0.8.0 - Exportação e Compartilhamento

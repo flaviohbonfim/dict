@@ -36,6 +36,7 @@ export function TextEditor({
   // Autocomplete state
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteTrigger, setAutocompleteTrigger] = useState('');
+  const [autocompleteQuery, setAutocompleteQuery] = useState('');
   const [autocompletePosition, setAutocompletePosition] = useState({ x: 0, y: 0 });
 
   const lineCount = value.split('\n').length;
@@ -87,15 +88,37 @@ export function TextEditor({
   }, [syncScroll, onScrollSync, getScrollPercentage, onScroll]);
 
   // Detectar trigger de autocomplete
-  const checkAutocompleteTrigger = useCallback((text: string, cursorPos: number) => {
+  const findAutocompleteContext = useCallback((text: string, cursorPos: number) => {
     const lineStart = text.lastIndexOf('\n', cursorPos - 1) + 1;
     const currentLine = text.substring(lineStart, cursorPos);
     
-    // Check for triggers
-    const triggers = ['#', '-', '*', '`', '>', '---', '|', '![' , '['];
+    // Check for triggers from longest to shortest
+    const triggers = ['---', '![' , '[', '#', '-', '*', '`', '>', '|', ':'];
+    
     for (const trigger of triggers) {
-      if (currentLine === trigger || (trigger.length > 1 && currentLine.endsWith(trigger))) {
-        return trigger;
+      const triggerIndex = currentLine.lastIndexOf(trigger);
+      if (triggerIndex !== -1) {
+        // O trigger deve estar no início da linha para a maioria, 
+        // exceto para alguns como : ou [ que podem estar no meio
+        const isAtStart = triggerIndex === 0;
+        const charBeforeTrigger = triggerIndex > 0 ? currentLine[triggerIndex - 1] : null;
+        const isPrecededBySpace = charBeforeTrigger === ' ';
+        const query = currentLine.substring(triggerIndex + trigger.length);
+        
+        // Se houver espaço logo após o trigger (exceto se for o início dele), fecha
+        if (query.includes(' ')) continue;
+
+        // Regra especial para emoji: só abre se for no início ou após um espaço
+        if (trigger === ':') {
+          if (isAtStart || isPrecededBySpace) {
+            return { trigger, query, triggerStart: lineStart + triggerIndex };
+          }
+          continue;
+        }
+
+        if (isAtStart || trigger === '[' || trigger === '![') {
+          return { trigger, query, triggerStart: lineStart + triggerIndex };
+        }
       }
     }
     return null;
@@ -109,17 +132,26 @@ export function TextEditor({
     const cursorPos = textarea.selectionStart;
     const trigger = autocompleteTrigger;
     
-    // Calcular onde começa o trigger
+    // Calcular onde começa o trigger baseado no valor atual
     const textBefore = value.substring(0, cursorPos);
     const lineStart = textBefore.lastIndexOf('\n') + 1;
-    const triggerStart = lineStart + textBefore.substring(lineStart).lastIndexOf(trigger);
+    const currentLine = textBefore.substring(lineStart);
+    const triggerIndexInLine = currentLine.lastIndexOf(trigger);
     
-    // Substituir trigger pelo texto completo
+    if (triggerIndexInLine === -1) {
+      setShowAutocomplete(false);
+      return;
+    }
+
+    const triggerStart = lineStart + triggerIndexInLine;
+    
+    // Substituir trigger + query pelo texto completo
     const newValue = value.substring(0, triggerStart) + insertText + value.substring(cursorPos);
     onChange(newValue);
 
     setShowAutocomplete(false);
     setAutocompleteTrigger('');
+    setAutocompleteQuery('');
 
     setTimeout(() => {
       textarea.focus();
@@ -130,34 +162,45 @@ export function TextEditor({
   }, [value, onChange, autocompleteTrigger]);
 
   // Handler para mudança de conteúdo com detecção de autocomplete
-  const handleContentChange = useCallback((newValue: string) => {
+  const handleContentChange = useCallback((newValue: string, cursorPos: number) => {
     onChange(newValue);
     
     // Detectar trigger de autocomplete
-    const textarea = textareaRef.current;
-    if (textarea) {
-      const cursorPos = textarea.selectionStart;
-      const trigger = checkAutocompleteTrigger(newValue, cursorPos);
+    const context = findAutocompleteContext(newValue, cursorPos);
+    
+    if (context) {
+      const { trigger, query } = context;
       
-      if (trigger) {
-        // Calcular posição do popup
-        const lineHeight = 22.4;
-        const textBefore = newValue.substring(0, cursorPos);
+      // Calcular posição do popup
+      const textarea = textareaRef.current;
+      if (textarea) {
+        const rect = textarea.getBoundingClientRect();
+        const textBefore = newValue.substring(0, context.triggerStart);
         const lines = textBefore.split('\n');
         const lineNumber = lines.length - 1;
         const columnNumber = lines[lines.length - 1].length;
         
-        setAutocompleteTrigger(trigger);
+        const charWidth = 8.4;
+        const lineHeight = 22.4;
+        
+        // Estabilizar posição: só atualiza se mudar o trigger ou se estiver muito longe
         setAutocompletePosition({
-          x: 100 + (columnNumber * 8.4), // char width approx
-          y: 50 + (lineNumber * lineHeight),
+          x: rect.left + 16 + (columnNumber * charWidth) - textarea.scrollLeft,
+          y: rect.top + 16 + (lineNumber * lineHeight) - textarea.scrollTop + lineHeight
         });
+        
+        setAutocompleteTrigger(trigger);
+        setAutocompleteQuery(query);
         setShowAutocomplete(true);
-      } else {
+      }
+    } else {
+      if (showAutocomplete) {
         setShowAutocomplete(false);
+        setAutocompleteTrigger('');
+        setAutocompleteQuery('');
       }
     }
-  }, [onChange, checkAutocompleteTrigger]);
+  }, [onChange, findAutocompleteContext, showAutocomplete]);
 
   // Scroll externo
   useEffect(() => {
@@ -265,20 +308,40 @@ export function TextEditor({
     // Update on scroll
     textarea.addEventListener('scroll', renderHighlights);
 
+    const currentHighlightLayer = highlightLayerRef.current;
+    
     return () => {
       textarea.removeEventListener('scroll', renderHighlights);
       // Clear highlights on cleanup
-      if (highlightLayerRef.current) {
-        highlightLayerRef.current.innerHTML = '';
+      if (currentHighlightLayer) {
+        currentHighlightLayer.innerHTML = '';
       }
     };
   }, [searchQuery, searchMatches, currentMatchIndex, value]);
+
+  const insertAroundCursor = useCallback((before: string, after: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = value.substring(start, end);
+    const newValue = value.substring(0, start) + before + selectedText + after + value.substring(end);
+    onChange(newValue);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.selectionStart = start + before.length;
+      textarea.selectionEnd = end + before.length;
+    }, 0);
+  }, [value, onChange]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Fechar autocomplete com Escape
     if (e.key === 'Escape' && showAutocomplete) {
       setShowAutocomplete(false);
       setAutocompleteTrigger('');
+      setAutocompleteQuery('');
       return;
     }
 
@@ -318,24 +381,8 @@ export function TextEditor({
       e.preventDefault();
       insertAroundCursor('`', '`');
     }
-  }, [value, onChange, onSave]);
+  }, [value, onChange, onSave, showAutocomplete, insertAroundCursor]);
 
-  const insertAroundCursor = (before: string, after: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = value.substring(start, end);
-    const newValue = value.substring(0, start) + before + selectedText + after + value.substring(end);
-    onChange(newValue);
-
-    setTimeout(() => {
-      textarea.focus();
-      textarea.selectionStart = start + before.length;
-      textarea.selectionEnd = end + before.length;
-    }, 0);
-  };
 
   return (
     <div className="text-editor-container">
@@ -358,7 +405,7 @@ export function TextEditor({
           ref={textareaRef}
           className="text-editor"
           value={value}
-          onChange={(e) => handleContentChange(e.target.value)}
+          onChange={(e) => handleContentChange(e.target.value, e.target.selectionStart)}
           onScroll={handleScroll}
           onKeyDown={handleKeyDown}
           spellCheck={false}
@@ -366,10 +413,11 @@ export function TextEditor({
         />
       </div>
       
-      {/* Autocomplete Popup */}
       {showAutocomplete && (
         <Autocomplete
+          key={autocompleteTrigger}
           trigger={autocompleteTrigger}
+          query={autocompleteQuery}
           position={autocompletePosition}
           onSelect={handleAutocompleteSelect}
           onClose={() => setShowAutocomplete(false)}

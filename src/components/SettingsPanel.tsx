@@ -238,7 +238,7 @@ export function SettingsPanel({
             <p>inspirado no VS Code, com suporte a diagramas Mermaid.</p>
             <br />
             <p>
-              <strong>Versão:</strong> 0.6.0
+              <strong>Versão:</strong> 0.7.0
             </p>
             <p>
               <strong>Tecnologias:</strong> React, TypeScript, Vite

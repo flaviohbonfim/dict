@@ -2,7 +2,7 @@
 
 # dict - editor de markdown
 
-![Versão](https://img.shields.io/badge/versão-0.6.0-blue)
+![Versão](https://img.shields.io/badge/versão-0.7.0-blue)
 ![React](https://img.shields.io/badge/React-19.2.0-61dafb)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-3178c6)
 ![Vite](https://img.shields.io/badge/Vite-7.3.1-646cff)
@@ -28,6 +28,9 @@ O **dict** é um editor de Markdown leve e moderno, inspirado no VS Code, desenv
 - 🔍 **Syntax Highlighting** para blocos de código
 - 📑 **Sistema de Abas** para múltiplos arquivos
 - 🎯 **Scroll Sincronizado** entre editor e preview
+- ⌨️ **Auto-complete** para Markdown e Emojis
+- 🪄 **Formatação Automática** de documentos
+- 🚀 **Persistência de Workspace** (abas salvas ao recarregar)
 
 ---
 
@@ -138,6 +141,14 @@ O dict possui dois temas exclusivos:
 - Busca por categoria
 - Shortcodes no formato `:emoji:`
 - Categorias: Smileys, Pessoas, Animais, Comida, Atividades, Viagem
+- **Autocomplete**: Digite `:` para sugestões rápidas
+- **Shortcodes**: Suporte a ícones visuais no preview
+
+### UX e Produtividade
+
+- **Formatar Documento**: Padronização instantânea com `Shift+Alt+F`
+- **Minimapa**: Visão geral interativa do código
+- **Workspace**: Abas abertas persistem entre sessões
 
 ### Mermaid
 

@@ -7,7 +7,59 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
-## [0.6.0] - Gerenciamento de Arquivos e Organização por Pastas
+## [0.7.0] - Editor Avançado e Persistência de Workspace
+
+### 🎉 Novas Funcionalidades
+
+#### Auto-complete Inteligente
+
+- Sugestões automáticas de sintaxe Markdown (#, -, \*, etc.)
+- Autocomplete de emojis ao digitar `:` com suporte a mais de 800 shortcodes
+- Seleção com Enter/Tab e navegação intuitiva com setas do teclado
+- Suporte a ícones visuais nas sugestões de emojis para facilitar a escolha
+
+#### Formatação de Documento
+
+- Novo botão "Formatar Documento" na toolbar para padronização instantânea
+- Atalho global `Shift+Alt+F` para acessibilidade rápida
+- Limpeza inteligente de espaços extras no final de cada linha
+- Normalização de títulos (garante espaço após o símbolo `#`) e parágrafos
+
+#### Persistência de Workspace
+
+- As abas abertas agora são totalmente salvas e restauradas ao atualizar a página
+- A aba ativa também é persistida no `localStorage`, mantendo o fluxo de trabalho
+- Sincronização automática para evitar referências a arquivos que foram excluídos ou renomeados
+
+#### Interface e Contexto
+
+- Opção **"Limpar Arquivos Recentes"** adicionada ao menu de contexto do explorador
+- Opção **"Inserir Emoji"** adicionada ao botão direito dentro do editor
+- Opção **"Formatar Documento"** integrada ao menu de contexto e toolbar lateral
+- As seções **"Recentes"** e **"Favoritos"** na sidebar agora podem ser recolhidas para economizar espaço
+- Estado de expansão (aberto/fechado) é persistido individualmente no `localStorage`
+
+### ✨ Melhorias de UX
+
+#### Refinamento de Emojis
+
+- Suporte a shortcodes modernos (`:warning:`, `:fire:`, `:sparkles:`, etc.) no preview
+- Inserção via picker agora utiliza obrigatoriamente códigos Markdown (ex: `:smile:`)
+- Gatilho do autocomplete `:` aprimorado com regex para evitar disparos falsos durante a escrita normal
+
+#### Minimapa Inteligente
+
+- Visibilidade condicionada inteligentemente ao modo Preview (Split/Preview)
+- Posicionamento dinâmico à direita da tela, evitando obstrução do texto
+
+### 🐛 Correções
+
+- Resolvido bug onde o autocomplete disparava erroneamente ao fechar um código de emoji
+- Corrigida a inserção de emojis através da barra de tarefas que apresentava falhas intermitentes
+- Limpeza profunda de estados obsoletos e otimização significativa de performance no `App.tsx`
+- Sincronização de scroll aprimorada para lidar com conteúdos formatados dinamicamente
+
+---
 
 ### 🎉 Novas Funcionalidades
 

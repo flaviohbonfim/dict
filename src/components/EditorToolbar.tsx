@@ -1,4 +1,4 @@
-import { Code, Link, List, GitGraph, Edit, Columns, Eye, Bold, Italic, Heading, Smile, ChevronDown, PanelLeft } from 'lucide-react';
+import { Code, Link, List, GitGraph, Edit, Columns, Eye, Bold, Italic, Heading, Smile, ChevronDown, PanelLeft, AlignLeft } from 'lucide-react';
 
 interface EditorToolbarProps {
   viewMode: 'split' | 'editor' | 'preview';
@@ -19,6 +19,7 @@ interface EditorToolbarProps {
   onEmoji: () => void;
   showMinimap: boolean;
   onToggleMinimap: () => void;
+  onFormatDocument: () => void;
 }
 
 export function EditorToolbar({
@@ -40,6 +41,7 @@ export function EditorToolbar({
   onEmoji,
   showMinimap,
   onToggleMinimap,
+  onFormatDocument,
 }: EditorToolbarProps) {
   return (
     <div className="editor-toolbar">
@@ -92,6 +94,11 @@ export function EditorToolbar({
       <button className="toolbar-btn" onClick={onEmoji} title="Inserir Emoji">
         <Smile size={14} />
         <span>Emoji</span>
+      </button>
+      
+      <button className="toolbar-btn" onClick={onFormatDocument} title="Formatar Documento (Shift+Alt+F)">
+        <AlignLeft size={14} />
+        <span>Formatar</span>
       </button>
 
       <button className="toolbar-btn" onClick={onToggleMinimap} title={showMinimap ? 'Ocultar Minimapa' : 'Mostrar Minimapa'}>

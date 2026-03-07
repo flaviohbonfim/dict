@@ -13,6 +13,7 @@ import { ChangelogModal } from './components/ChangelogModal';
 import { EmojiPickerComponent } from './components/EmojiPicker';
 import { SearchBar } from './components/SearchBar';
 import { Minimap } from './components/Minimap';
+import { formatMarkdown } from './utils/formatter';
 import './styles/global.css';
 import './styles/layout.css';
 
@@ -141,7 +142,44 @@ pie
 **Dica:** Use os atalhos de teclado para formatar seu texto mais rapidamente!
 `;
 
-const CHANGELOG = `## Versão 0.6.0 - Gerenciamento de Arquivos e Organização por Pastas
+const CHANGELOG = `## Versão 0.7.0 - Editor Avançado e Persistência de Workspace
+
+### Novas Funcionalidades
+
+#### Auto-complete Inteligente
+- Sugestões automáticas de sintaxe Markdown (#, -, *, etc.)
+- Autocomplete de emojis ao digitar \`:\` com suporte a +800 shortcodes
+- Seleção com Enter/Tab e navegação intuitiva com setas
+- Suporte a ícones visuais nas sugestões de emojis
+
+#### Formatação de Documento
+- Padronização de espaçamento e normalização instantânea de títulos
+- Limpeza de espaços extras no final das linhas
+- Atalho global \`Shift+Alt+F\`
+
+#### Persistência de Workspace
+- Abas abertas e aba ativa persistem entre recarregamentos de página
+- Sincronização automática para evitar erros em arquivos excluídos
+
+#### Interface e Contexto
+- Opções "Inserir Emoji" e "Formatar Documento" no menu do editor
+- Opção "Limpar Arquivos Recentes" no explorador
+- Seções "Recentes" e "Favoritos" agora podem ser recolhidas (estado persistido)
+
+### Melhorias de UX
+- Suporte a shortcodes modernos no preview (:warning:, :fire:, etc.)
+- Gatilho do autocomplete aprimorado para evitar disparos falsos
+- Minimapa com posicionamento dinâmico e visibilidade condicionada
+
+### Correções
+- Resolvido bug do autocomplete ao fechar shortcode de emoji
+- Corrigida inserção de emojis pela barra de tarefas
+- Limpeza de estados e otimização de performance no App.tsx
+- Sincronização de scroll refinada
+
+---
+
+## Versão 0.6.0 - Gerenciamento de Arquivos e Organização por Pastas
 
 ### Novas Funcionalidades
 
@@ -470,6 +508,11 @@ const CHANGELOG = `## Versão 0.6.0 - Gerenciamento de Arquivos e Organização 
 - Changelog da versão
 - Informações sobre o aplicativo`;
 
+// Helper function to escape regex characters
+const escapeRegex = (string: string): string => {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
 function App() {
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem('dict-theme');
@@ -489,7 +532,6 @@ function App() {
   const [scrollPercentage, setScrollPercentage] = useState(0);
   const [scrollSource, setScrollSource] = useState<'editor' | 'preview' | null>(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [emojiPickerPosition, setEmojiPickerPosition] = useState({ x: 0, y: 0 });
@@ -536,7 +578,7 @@ function App() {
     const savedFiles = localStorage.getItem('dict-files');
     if (savedFiles) {
       try {
-        const parsed = JSON.parse(savedFiles);
+        const parsed = JSON.parse(savedFiles) as FileData[];
         if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed;
         }
@@ -547,38 +589,72 @@ function App() {
     return [{ id: '1', name: 'Bem-vindo.md', type: 'file', content: DEFAULT_CONTENT }];
   });
   const [tabs, setTabs] = useState<Tab[]>(() => {
+    const savedTabs = localStorage.getItem('dict-tabs');
     const savedFiles = localStorage.getItem('dict-files');
+    
+    if (savedTabs && savedFiles) {
+      try {
+        const parsedTabs = JSON.parse(savedTabs) as Tab[];
+        const parsedFiles = JSON.parse(savedFiles) as FileData[];
+        const fileIds = new Set(parsedFiles.map((f: FileData) => f.id));
+        
+        // Filtra apenas abas cujos arquivos ainda existem
+        const validTabs = parsedTabs.filter((t: Tab) => fileIds.has(t.fileId));
+        
+        if (validTabs.length > 0) {
+          return validTabs;
+        }
+      } catch (e) {
+        console.error('Erro ao carregar abas salvas:', e);
+      }
+    }
+    
+    // Fallback: abre o primeiro arquivo disponível
     if (savedFiles) {
       try {
-        const parsed = JSON.parse(savedFiles);
+        const parsed = JSON.parse(savedFiles) as FileData[];
         if (Array.isArray(parsed) && parsed.length > 0) {
           const firstFile = parsed[0];
           return [{
             id: `tab-${firstFile.id}`,
             fileId: firstFile.id,
             name: firstFile.name,
-            content: firstFile.content,
+            content: firstFile.content || '',
             isDirty: false
           }];
         }
       } catch (e) {
-        console.error('Erro ao carregar arquivos salvos:', e);
+        console.error('Erro ao processar arquivos salvos para fallback de abas:', e);
       }
     }
     return [{ id: 'tab-1', fileId: '1', name: 'Bem-vindo.md', content: DEFAULT_CONTENT, isDirty: false }];
   });
+
   const [activeTabId, setActiveTabId] = useState<string>(() => {
-    const savedFiles = localStorage.getItem('dict-files');
-    if (savedFiles) {
+    const savedActiveTab = localStorage.getItem('dict-active-tab');
+    const savedTabs = localStorage.getItem('dict-tabs');
+    
+    if (savedActiveTab && savedTabs) {
       try {
-        const parsed = JSON.parse(savedFiles);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return `tab-${parsed[0].id}`;
+        const parsedTabs = JSON.parse(savedTabs) as Tab[];
+        if (parsedTabs.some((t: Tab) => t.id === savedActiveTab)) {
+          return savedActiveTab;
         }
       } catch (e) {
-        console.error('Erro ao carregar arquivos salvos:', e);
+        console.error('Erro ao validar aba ativa salva:', e);
       }
     }
+    
+    // Fallback: se houver abas, pega a primeira
+    if (savedTabs) {
+      try {
+        const parsedTabs = JSON.parse(savedTabs) as Tab[];
+        if (parsedTabs.length > 0) return parsedTabs[0].id;
+      } catch (e) {
+        console.error('Erro ao processar abas salvas para fallback:', e);
+      }
+    }
+    
     return 'tab-1';
   });
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -588,6 +664,19 @@ function App() {
     target: null,
     fileId: undefined
   });
+  
+  // Adicionar arquivo aos recentes (Moved up)
+  const addToRecentFiles = useCallback((recentFile: RecentFile) => {
+    setRecentFiles(prev => {
+      // Remove se já existe
+      const filtered = prev.filter(f => f.id !== recentFile.id);
+      // Adiciona no início
+      const updated = [recentFile, ...filtered].slice(0, 10); // Mantém últimos 10
+      localStorage.setItem('dict-recent-files', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
 
   const editorRef = useRef<HTMLDivElement>(null);
@@ -596,24 +685,42 @@ function App() {
   const activeTab = tabs.find(t => t.id === activeTabId);
   const activeFile = files.find(f => f.id === activeTab?.fileId);
 
-  // Marcar como carregamento inicial concluído
+  const isInitialLoadRef = useRef(true);
   useEffect(() => {
-    setIsInitialLoad(false);
+    isInitialLoadRef.current = false;
   }, []);
+
+  // Salvar abas no localStorage quando houver mudanças
+  useEffect(() => {
+    if (tabs.length > 0) {
+      localStorage.setItem('dict-tabs', JSON.stringify(tabs));
+    }
+  }, [tabs]);
+
+  // Salvar aba ativa no localStorage
+  useEffect(() => {
+    if (activeTabId) {
+      localStorage.setItem('dict-active-tab', activeTabId);
+    }
+  }, [activeTabId]);
 
   // Auto-save: salvar arquivos no localStorage quando houver mudanças
   useEffect(() => {
-    // Não salva no primeiro render (carregamento inicial)
-    if (isInitialLoad) return;
+    if (isInitialLoadRef.current) return;
 
     if (autoSaveEnabled && files.length > 0) {
       localStorage.setItem('dict-files', JSON.stringify(files));
-      setLastSavedTime(new Date());
       
-      // Marca como salvo (remove o dirty indicator)
-      setTabs(prev => prev.map(t => ({ ...t, isDirty: false })));
+      // Marca como salvo (remove o dirty indicator) sem disparar novo render infinito
+      // Idealmente, o isDirty seria gerenciado separadamente ou via ref se necessário em massa
+      setTabs(prev => {
+        const hasDirty = prev.some(t => t.isDirty);
+        if (!hasDirty) return prev;
+        return prev.map(t => ({ ...t, isDirty: false }));
+      });
+      setLastSavedTime(new Date());
     }
-  }, [files, autoSaveEnabled, isInitialLoad]);
+  }, [files, autoSaveEnabled]);
 
   // Aplicar tema e salvar no localStorage
   useEffect(() => {
@@ -628,9 +735,7 @@ function App() {
 
   // Salvar estado do sidebar no localStorage
   useEffect(() => {
-    console.log('[Sidebar] Salvando estado:', activeView);
     localStorage.setItem('dict-sidebar', activeView);
-    console.log('[Sidebar] Estado salvo no localStorage:', localStorage.getItem('dict-sidebar'));
   }, [activeView]);
 
   // Fechar menu de contexto e submenus ao clicar fora
@@ -650,90 +755,6 @@ function App() {
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
   }, [contextMenu.visible, headingMenuOpen, mermaidMenuOpen]);
-
-  // Atalhos de teclado globais
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Fechar modais com ESC
-      if (e.key === 'Escape') {
-        if (showSearch) {
-          e.preventDefault();
-          setShowSearch(false);
-          return;
-        }
-        if (showSettings) {
-          e.preventDefault();
-          setShowSettings(false);
-          return;
-        }
-        if (showChangelog) {
-          e.preventDefault();
-          setShowChangelog(false);
-          return;
-        }
-        if (showEmojiPicker) {
-          e.preventDefault();
-          setShowEmojiPicker(false);
-          return;
-        }
-        if (showConfirmModal) {
-          e.preventDefault();
-          setShowConfirmModal(false);
-          setConfirmModalData(null);
-          return;
-        }
-      }
-
-      // Buscar (Ctrl+F)
-      if (e.ctrlKey && e.key === 'f') {
-        e.preventDefault();
-        setShowSearch(true);
-        return;
-      }
-
-      // Substituir (Ctrl+H)
-      if (e.ctrlKey && e.key === 'h') {
-        e.preventDefault();
-        setShowSearch(true);
-        return;
-      }
-
-      // Ir para Linha (Ctrl+G)
-      if (e.ctrlKey && e.key === 'g') {
-        e.preventDefault();
-        setShowGoToLine(true);
-        setGoToLineNumber('');
-        return;
-      }
-
-      // Alternar view mode (Ctrl+\)
-      if (e.ctrlKey && e.key === '\\') {
-        e.preventDefault();
-        setViewMode(prev => prev === 'split' ? 'editor' : 'split');
-      }
-
-      // Salvar (Ctrl+S)
-      if (e.ctrlKey && e.key === 's') {
-        e.preventDefault();
-        handleSave();
-      }
-
-      // Alternar sidebar (Ctrl+Shift+E)
-      if (e.ctrlKey && e.shiftKey && e.key === 'E') {
-        e.preventDefault();
-        setActiveView(prev => prev === 'explorer' ? '' : 'explorer');
-      }
-
-      // Alternar configurações (Ctrl+,)
-      if (e.ctrlKey && e.key === ',') {
-        e.preventDefault();
-        setShowSettings(prev => !prev);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showSearch, showSettings, showChangelog, showEmojiPicker, showConfirmModal]);
 
   // Calcular posição do cursor
   const updateCursorPosition = useCallback(() => {
@@ -838,6 +859,16 @@ function App() {
     ));
   }, [activeTab, activeTabId, historyIndex]);
 
+  // Formatar o documento atual
+  const handleFormatDocument = useCallback(() => {
+    if (!activeTab) return;
+
+    const formatted = formatMarkdown(activeTab.content);
+    if (formatted === activeTab.content) return;
+
+    handleContentChange(formatted);
+  }, [activeTab, handleContentChange]);
+
   // Função de Undo (Ctrl+Z)
   const handleUndo = useCallback(() => {
     if (historyIndex < 0 || !activeTab) return;
@@ -897,6 +928,7 @@ function App() {
 
     const content = activeTab.content;
     const matches: { start: number; end: number }[] = [];
+    
     const flags = options.matchCase ? 'g' : 'gi';
     
     if (options.matchWholeWord) {
@@ -921,13 +953,13 @@ function App() {
     });
   }, [activeTab]);
 
-  // Clear search when content changes significantly
   useEffect(() => {
-    if (searchQuery && activeTab && searchMatches.length > 0) {
+    if (searchQuery && activeTab) {
       // Re-run search to update matches with new content
+      // Reduzir chamadas desnecessárias comparando conteúdo se possível ou removendo length do dep
       handleSearch(searchQuery, { matchCase: false, matchWholeWord: false });
     }
-  }, [activeTab?.content, searchQuery, handleSearch]);
+  }, [activeTab, searchQuery, handleSearch]);
 
   // Clear search highlights when closing search bar
   const handleCloseSearch = useCallback(() => {
@@ -939,7 +971,7 @@ function App() {
     setTimeout(() => setShowSearch(false), 0);
   }, []);
 
-  const scrollToMatch = (index: number) => {
+  const scrollToMatch = useCallback((index: number) => {
     const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
     if (!textarea || searchMatches.length === 0) return;
 
@@ -956,7 +988,7 @@ function App() {
     
     // Scroll to the position
     textarea.scrollTop = Math.max(0, targetScrollLine * lineHeight);
-  };
+  }, [searchMatches]);
 
   const handleFindNext = useCallback(() => {
     if (searchMatches.length === 0) return;
@@ -967,7 +999,7 @@ function App() {
     setTimeout(() => {
       scrollToMatch(nextIndex);
     }, 50);
-  }, [searchMatches, currentMatchIndex]);
+  }, [searchMatches, currentMatchIndex, scrollToMatch]);
 
   const handleFindPrevious = useCallback(() => {
     if (searchMatches.length === 0) return;
@@ -979,7 +1011,7 @@ function App() {
     setTimeout(() => {
       scrollToMatch(prevIndex);
     }, 50);
-  }, [searchMatches, currentMatchIndex]);
+  }, [searchMatches, currentMatchIndex, scrollToMatch]);
 
   const handleReplace = useCallback((replacement: string) => {
     setReplacementText(replacement);
@@ -1012,11 +1044,6 @@ function App() {
     setSearchMatches([]);
     setCurrentMatchIndex(-1);
   }, [activeTab, searchQuery, replacementText, handleContentChange]);
-
-  // Helper function
-  function escapeRegex(string: string): string {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
 
   // Ir para Linha
   const handleGoToLine = useCallback(() => {
@@ -1128,19 +1155,8 @@ function App() {
       }
     };
     input.click();
-  }, []);
+  }, [addToRecentFiles]);
 
-  // Adicionar arquivo aos recentes
-  const addToRecentFiles = useCallback((recentFile: RecentFile) => {
-    setRecentFiles(prev => {
-      // Remove se já existe
-      const filtered = prev.filter(f => f.id !== recentFile.id);
-      // Adiciona no início
-      const updated = [recentFile, ...filtered].slice(0, 10); // Mantém últimos 10
-      localStorage.setItem('dict-recent-files', JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
 
   // Toggle favorite
   const toggleFavorite = useCallback((fileId: string) => {
@@ -1406,6 +1422,11 @@ function App() {
       fileId
     });
   }, []);
+  
+  const handleClearRecentFiles = useCallback(() => {
+    setRecentFiles([]);
+    localStorage.removeItem('dict-recent-files');
+  }, []);
 
   // Inserir formatação no editor
   const insertFormatting = useCallback((before: string, after: string) => {
@@ -1640,6 +1661,96 @@ graph TD
   const wordCount = activeTab?.content.trim() ? activeTab.content.trim().split(/\s+/).length : 0;
   const readingTime = Math.ceil(wordCount / 200); // Média: 200 palavras por minuto
 
+  // Atalhos de teclado globais
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Fechar modais com ESC
+      if (e.key === 'Escape') {
+        if (showSearch) {
+          e.preventDefault();
+          setShowSearch(false);
+          return;
+        }
+        if (showSettings) {
+          e.preventDefault();
+          setShowSettings(false);
+          return;
+        }
+        if (showChangelog) {
+          e.preventDefault();
+          setShowChangelog(false);
+          return;
+        }
+        if (showEmojiPicker) {
+          e.preventDefault();
+          setShowEmojiPicker(false);
+          return;
+        }
+        if (showConfirmModal) {
+          e.preventDefault();
+          setShowConfirmModal(false);
+          setConfirmModalData(null);
+          return;
+        }
+      }
+
+      // Buscar (Ctrl+F)
+      if (e.ctrlKey && e.key === 'f') {
+        e.preventDefault();
+        setShowSearch(true);
+        return;
+      }
+
+      // Substituir (Ctrl+H)
+      if (e.ctrlKey && e.key === 'h') {
+        e.preventDefault();
+        setShowSearch(true);
+        return;
+      }
+
+      // Ir para Linha (Ctrl+G)
+      if (e.ctrlKey && e.key === 'g') {
+        e.preventDefault();
+        setShowGoToLine(true);
+        setGoToLineNumber('');
+        return;
+      }
+
+      // Alternar view mode (Ctrl+\)
+      if (e.ctrlKey && e.key === '\\') {
+        e.preventDefault();
+        setViewMode(prev => prev === 'split' ? 'editor' : 'split');
+      }
+
+      // Salvar (Ctrl+S)
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+
+      // Alternar sidebar (Ctrl+Shift+E)
+      if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+        e.preventDefault();
+        setActiveView(prev => prev === 'explorer' ? '' : 'explorer');
+      }
+
+      // Alternar configurações (Ctrl+,)
+      if (e.ctrlKey && e.key === ',') {
+        e.preventDefault();
+        setShowSettings(prev => !prev);
+      }
+
+      // Formatar Documento (Shift+Alt+F)
+      if (e.shiftKey && e.altKey && e.key === 'F') {
+        e.preventDefault();
+        handleFormatDocument();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showSearch, showSettings, showChangelog, showEmojiPicker, showConfirmModal, handleFormatDocument, handleSave, activeView, setViewMode, setActiveView, setShowSettings, setShowSearch, setShowGoToLine, setShowConfirmModal]);
+
   return (
     <div className="app-container">
       {/* Main Layout */}
@@ -1750,6 +1861,7 @@ graph TD
             onEmoji={handleEmoji}
             showMinimap={showMinimap}
             onToggleMinimap={() => setShowMinimap(!showMinimap)}
+            onFormatDocument={handleFormatDocument}
           />
 
           {/* Editor Split View */}
@@ -1934,6 +2046,7 @@ graph TD
         readingTime={readingTime}
       />
 
+
       {/* Context Menu */}
       {contextMenu.visible && (
         <ContextMenu
@@ -1955,6 +2068,7 @@ graph TD
           onClose={handleCloseFile}
           onNewFile={handleNewFile}
           onOpenFile={handleOpenFile}
+          onClearRecentFiles={handleClearRecentFiles}
           editorActions={{
             bold: handleBold,
             italic: handleItalic,
@@ -1962,7 +2076,9 @@ graph TD
             code: handleCode,
             link: handleLink,
             list: handleList,
-            mermaid: () => handleMermaid('flowchart')
+            mermaid: () => handleMermaid('flowchart'),
+            format: handleFormatDocument,
+            emoji: handleEmoji
           }}
           previewActions={{
             selectAll: handlePreviewSelectAll,

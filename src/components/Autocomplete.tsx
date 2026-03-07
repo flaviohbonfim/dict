@@ -1,13 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 
 interface Suggestion {
   label: string;
   insertText: string;
   type: 'heading' | 'list' | 'code' | 'quote' | 'rule' | 'table' | 'link' | 'image';
+  icon?: string;
 }
 
 interface AutocompleteProps {
   trigger: string;
+  query?: string;
   position: { x: number; y: number };
   onSelect: (text: string) => void;
   onClose: () => void;
@@ -36,30 +38,54 @@ const SUGGESTIONS: Record<string, Suggestion[]> = {
   ],
   '>': [
     { label: 'Citação', insertText: '> ', type: 'quote' },
+    { label: 'Citação em bloco', insertText: '> ', type: 'quote' },
   ],
   '---': [
     { label: 'Linha horizontal', insertText: '---\n', type: 'rule' },
   ],
   '|': [
-    { label: 'Tabela', insertText: '| Coluna 1 | Coluna 2 |\n|----------|----------|\n| Valor 1  | Valor 2  |', type: 'table' },
+    { label: 'Tabela Simples', insertText: '| Coluna 1 | Coluna 2 |\n|----------|----------|\n| Valor 1  | Valor 2  |', type: 'table' },
+    { label: 'Tabela 3 Colunas', insertText: '| Col 1 | Col 2 | Col 3 |\n|-------|-------|-------|\n| Val 1 | Val 2 | Val 3 |', type: 'table' },
   ],
   '![': [
     { label: 'Imagem', insertText: '![alt text](url)', type: 'image' },
   ],
   '[': [
     { label: 'Link', insertText: '[texto](url)', type: 'link' },
+    { label: 'Link de Checkbox', insertText: '- [ ] ', type: 'list' },
+  ],
+  ':': [
+    { label: 'Sorrindo', insertText: ':smile:', type: 'image', icon: '😄' },
+    { label: 'Foguete', insertText: ':rocket:', type: 'image', icon: '🚀' },
+    { label: 'Aviso', insertText: ':warning:', type: 'image', icon: '⚠️' },
+    { label: 'Ideia', insertText: ':bulb:', type: 'image', icon: '💡' },
+    { label: 'Check', insertText: ':white_check_mark:', type: 'image', icon: '✅' },
+    { label: 'Fogo', insertText: ':fire:', type: 'image', icon: '🔥' },
+    { label: 'Brilhos', insertText: ':sparkles:', type: 'image', icon: '✨' },
   ],
 };
 
-export function Autocomplete({ trigger, position, onSelect, onClose }: AutocompleteProps) {
+export function Autocomplete({ trigger, query = '', position, onSelect, onClose }: AutocompleteProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   
-  const suggestions = SUGGESTIONS[trigger] || [];
+  const suggestions = useMemo(() => {
+    const list = SUGGESTIONS[trigger] || [];
+    if (!query) return list;
+    return list.filter(item => 
+      item.label.toLowerCase().includes(query.toLowerCase()) ||
+      item.insertText.toLowerCase().includes(query.toLowerCase())
+    );
+  }, [trigger, query]);
 
+  // Reset selection when suggestions change length or trigger changes
   useEffect(() => {
-    setSelectedIndex(0);
-  }, [trigger]);
+    // Usar um timeout pequeno ou verificar se o valor mudou para evitar cascata imediata
+    const timer = setTimeout(() => {
+      setSelectedIndex(0);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [suggestions.length, trigger]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -105,7 +131,7 @@ export function Autocomplete({ trigger, position, onSelect, onClose }: Autocompl
           onClick={() => onSelect(suggestion.insertText)}
         >
           <span className={`autocomplete-icon ${suggestion.type}`}>
-            {getIcon(suggestion.type)}
+            {suggestion.type === 'image' ? (suggestion.icon || '🖼️') : getIcon(suggestion.type)}
           </span>
           <span className="autocomplete-label">{suggestion.label}</span>
         </button>

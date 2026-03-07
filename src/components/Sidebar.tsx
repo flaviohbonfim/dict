@@ -52,6 +52,14 @@ export function Sidebar({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [expandedFolders, setExpandedFolders] = useState<string[]>([]);
+  const [isRecentExpanded, setIsRecentExpanded] = useState(() => {
+    const saved = localStorage.getItem('dict-recent-expanded');
+    return saved !== 'false'; // Default true
+  });
+  const [isFavoriteExpanded, setIsFavoriteExpanded] = useState(() => {
+    const saved = localStorage.getItem('dict-favorite-expanded');
+    return saved !== 'false'; // Default true
+  });
 
   const toggleFolder = (folderId: string) => {
     setExpandedFolders(prev => 
@@ -59,6 +67,22 @@ export function Sidebar({
         ? prev.filter(id => id !== folderId)
         : [...prev, folderId]
     );
+  };
+
+  const toggleRecent = () => {
+    setIsRecentExpanded(prev => {
+      const newState = !prev;
+      localStorage.setItem('dict-recent-expanded', String(newState));
+      return newState;
+    });
+  };
+
+  const toggleFavoriteExpanded = () => {
+    setIsFavoriteExpanded(prev => {
+      const newState = !prev;
+      localStorage.setItem('dict-favorite-expanded', String(newState));
+      return newState;
+    });
   };
 
   const handleDoubleClick = (file: FileItem) => {
@@ -279,11 +303,14 @@ export function Sidebar({
         {/* Favoritos */}
         {favoriteFiles.length > 0 && (
           <div className="favorite-files-section">
-            <div className="section-header">
+            <div className="section-header collapsible-header" onClick={toggleFavoriteExpanded}>
+              <span className="folder-arrow">
+                {isFavoriteExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+              </span>
               <Star size={12} className="star-filled" />
               <span>Favoritos</span>
             </div>
-            {files.filter(f => favoriteFiles.includes(f.id)).map(file => (
+            {isFavoriteExpanded && files.filter(f => favoriteFiles.includes(f.id)).map(file => (
               <div
                 key={file.id}
                 className={`file-item favorite-file ${activeFile === file.id ? 'active' : ''}`}
@@ -312,11 +339,14 @@ export function Sidebar({
         {/* Arquivos Recentes */}
         {recentFiles.length > 0 && (
           <div className="recent-files-section">
-            <div className="section-header">
+            <div className="section-header collapsible-header" onClick={toggleRecent}>
+              <span className="folder-arrow">
+                {isRecentExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+              </span>
               <Clock size={12} />
               <span>Recentes</span>
             </div>
-            {recentFiles.map(file => (
+            {isRecentExpanded && recentFiles.map(file => (
               <div
                 key={file.id}
                 className="file-item recent-file"

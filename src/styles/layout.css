@@ -221,6 +221,16 @@
   color: var(--text-secondary);
 }
 
+.collapsible-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.collapsible-header:hover {
+  background-color: var(--hover-bg);
+  color: var(--accent);
+}
+
 .section-divider {
   height: 1px;
   background-color: var(--border);

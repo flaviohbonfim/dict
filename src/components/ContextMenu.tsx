@@ -12,7 +12,10 @@ import {
   List,
   GitGraph,
   Type,
-  ClipboardCheck
+  ClipboardCheck,
+  AlignLeft,
+  Smile,
+  Trash2
 } from 'lucide-react';
 
 interface ContextMenuProps {
@@ -25,6 +28,7 @@ interface ContextMenuProps {
   onClose: (fileId: string) => void;
   onNewFile: () => void;
   onOpenFile: () => void;
+  onClearRecentFiles: () => void;
   editorActions: {
     bold: () => void;
     italic: () => void;
@@ -33,6 +37,8 @@ interface ContextMenuProps {
     link: () => void;
     list: () => void;
     mermaid: () => void;
+    format: () => void;
+    emoji: () => void;
   };
   previewActions?: {
     selectAll: () => void;
@@ -50,6 +56,7 @@ export function ContextMenu({
   onClose,
   onNewFile,
   onOpenFile,
+  onClearRecentFiles,
   editorActions,
   previewActions
 }: ContextMenuProps) {
@@ -70,6 +77,11 @@ export function ContextMenu({
         <div className="context-menu-item" onClick={onOpenFile}>
           <FolderOpen size={14} />
           <span>Abrir Arquivo...</span>
+        </div>
+        <div className="context-menu-divider" />
+        <div className="context-menu-item" onClick={onClearRecentFiles}>
+          <Trash2 size={14} />
+          <span>Limpar Arquivos Recentes</span>
         </div>
         {fileId && (
           <>
@@ -125,6 +137,16 @@ export function ContextMenu({
         <div className="context-menu-item" onClick={editorActions.mermaid}>
           <GitGraph size={14} />
           <span>Inserir Mermaid</span>
+        </div>
+        <div className="context-menu-divider" />
+        <div className="context-menu-item" onClick={editorActions.emoji}>
+          <Smile size={14} />
+          <span>Inserir Emoji</span>
+        </div>
+        <div className="context-menu-divider" />
+        <div className="context-menu-item" onClick={editorActions.format}>
+          <AlignLeft size={14} />
+          <span>Formatar Documento</span>
         </div>
       </div>
     );

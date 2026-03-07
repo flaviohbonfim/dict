@@ -753,7 +753,7 @@ export function EmojiPickerComponent({ onSelectEmoji, onClose, position }: Emoji
             <button
               key={`${activeCategory}-${emoji.id}`}
               className="emoji-btn"
-              onClick={() => handleEmojiSelect(emoji.native)}
+              onClick={() => handleEmojiSelect(emoji.id)}
               title={emoji.id}
             >
               {emoji.native}
