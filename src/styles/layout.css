@@ -643,21 +643,21 @@
   overflow-x: auto;
 }
 
-/* Presentation Mode */
-.app-container.presentation-mode .activity-bar,
-.app-container.presentation-mode .sidebar,
-.app-container.presentation-mode .editor-toolbar,
-.app-container.presentation-mode .status-bar,
-.app-container.presentation-mode .tab-bar-container {
+/* Fullscreen Mode */
+.app-container.fullscreen-mode .activity-bar,
+.app-container.fullscreen-mode .sidebar,
+.app-container.fullscreen-mode .editor-toolbar,
+.app-container.fullscreen-mode .status-bar,
+.app-container.fullscreen-mode .tab-bar-container {
   display: none;
 }
 
-.app-container.presentation-mode .main-content {
+.app-container.fullscreen-mode .main-content {
   padding: 0;
   height: 100vh;
 }
 
-.presentation-exit-btn {
+.fullscreen-exit-btn {
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -674,7 +674,7 @@
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-.presentation-exit-btn:hover {
+.fullscreen-exit-btn:hover {
   background: var(--button-hover);
 }
 

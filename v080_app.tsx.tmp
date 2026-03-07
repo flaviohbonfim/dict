@@ -595,7 +595,7 @@ function App() {
     return localStorage.getItem('dict-github-token') || '';
   });
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [isFullscreenMode, setIsFullscreenMode] = useState(false);
+  const [isPresentationMode, setIsPresentationMode] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [exportMenuPosition, setExportMenuPosition] = useState({ x: 0, y: 0 });
   
@@ -1769,9 +1769,9 @@ function App() {
     }
   };
 
-  const handleToggleFullscreen = () => {
-    setIsFullscreenMode(!isFullscreenMode);
-    if (!isFullscreenMode) {
+  const handlePresentation = () => {
+    setIsPresentationMode(!isPresentationMode);
+    if (!isPresentationMode) {
       setViewMode('preview');
     }
   };
@@ -2096,11 +2096,11 @@ graph TD
   }, [showSearch, showSettings, showChangelog, showEmojiPicker, showConfirmModal, showGoToLine, handleFormatDocument, handleSave, activeView, setViewMode, setActiveView, setShowSettings, setShowSearch, setShowGoToLine, setShowConfirmModal]);
 
   return (
-    <div className={`app-container ${isFullscreenMode ? 'fullscreen-mode' : ''}`}>
-      {isFullscreenMode && (
-        <button className="fullscreen-exit-btn" onClick={() => setIsFullscreenMode(false)}>
+    <div className={`app-container ${isPresentationMode ? 'presentation-mode' : ''}`}>
+      {isPresentationMode && (
+        <button className="presentation-exit-btn" onClick={() => setIsPresentationMode(false)}>
           <Presentation size={14} />
-          <span>Sair do Fullscreen</span>
+          <span>Sair da Apresentação</span>
         </button>
       )}
       {/* Main Layout */}
@@ -2220,7 +2220,7 @@ graph TD
             onExportPDF={handleExportPDF}
             onExportHTML={handleExportHTML}
             onCopyHTML={handleCopyHTML}
-            onFullscreen={handleToggleFullscreen}
+            onPresentation={handlePresentation}
             onShare={handleShare}
             exportMenuOpen={exportMenuOpen}
             onExportMenuToggle={handleExportMenuToggle}

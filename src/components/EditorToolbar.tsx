@@ -29,7 +29,7 @@ interface EditorToolbarProps {
   onExportPDF: () => void;
   onExportHTML: () => void;
   onCopyHTML: () => void;
-  onPresentation: () => void;
+  onFullscreen: () => void;
   onShare: () => void;
   exportMenuOpen: boolean;
   onExportMenuToggle: (e: React.MouseEvent) => void;
@@ -64,7 +64,7 @@ export function EditorToolbar({
   onExportPDF,
   onExportHTML,
   onCopyHTML,
-  onPresentation,
+  onFullscreen,
   onShare,
   exportMenuOpen,
   onExportMenuToggle,
@@ -189,9 +189,9 @@ export function EditorToolbar({
         )}
       </div>
 
-      <button className="toolbar-btn" onClick={onPresentation} title="Modo Apresentação">
+      <button className="toolbar-btn" onClick={onFullscreen} title="Modo Fullscreen">
         <Presentation size={14} />
-        <span>Apresentação</span>
+        <span>Fullscreen</span>
       </button>
 
 
