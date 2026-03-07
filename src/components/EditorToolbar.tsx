@@ -1,10 +1,12 @@
-import { Code, Link, List, GitGraph, Edit, Columns, Eye, Bold, Italic, Heading, Smile, ChevronDown, PanelLeft, AlignLeft } from 'lucide-react';
+import { Code, Link, List, GitGraph, Edit, Columns, Eye, Bold, Italic, Heading, Smile, ChevronDown, PanelLeft, AlignLeft, Underline, WrapText, Image, Loader2, Download, FileText, FileType, Presentation, Copy, Share2 } from 'lucide-react';
+import { useRef } from 'react';
 
 interface EditorToolbarProps {
   viewMode: 'split' | 'editor' | 'preview';
   onViewModeChange: (mode: 'split' | 'editor' | 'preview') => void;
   onBold: () => void;
   onItalic: () => void;
+  onUnderline: () => void;
   onHeading: (e: React.MouseEvent) => void;
   onHeadingSelect: (level: number) => void;
   headingMenuOpen: boolean;
@@ -20,6 +22,18 @@ interface EditorToolbarProps {
   showMinimap: boolean;
   onToggleMinimap: () => void;
   onFormatDocument: () => void;
+  wordWrap: boolean;
+  onToggleWordWrap: () => void;
+  onImageUpload: (file: File) => void;
+  isUploadingImage: boolean;
+  onExportPDF: () => void;
+  onExportHTML: () => void;
+  onCopyHTML: () => void;
+  onPresentation: () => void;
+  onShare: () => void;
+  exportMenuOpen: boolean;
+  onExportMenuToggle: (e: React.MouseEvent) => void;
+  exportMenuPosition: { x: number; y: number };
 }
 
 export function EditorToolbar({
@@ -27,6 +41,7 @@ export function EditorToolbar({
   onViewModeChange,
   onBold,
   onItalic,
+  onUnderline,
   onHeading,
   onHeadingSelect,
   headingMenuOpen,
@@ -42,14 +57,51 @@ export function EditorToolbar({
   showMinimap,
   onToggleMinimap,
   onFormatDocument,
+  wordWrap,
+  onToggleWordWrap,
+  onImageUpload,
+  isUploadingImage,
+  onExportPDF,
+  onExportHTML,
+  onCopyHTML,
+  onPresentation,
+  onShare,
+  exportMenuOpen,
+  onExportMenuToggle,
+  exportMenuPosition,
 }: EditorToolbarProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onImageUpload(file);
+      // Reset input value to allow uploading the same file again
+      e.target.value = '';
+    }
+  };
+
   return (
     <div className="editor-toolbar">
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/*"
+        style={{ display: 'none' }}
+      />
       <button className="toolbar-btn" onClick={onBold} title="Negrito (Ctrl+B)">
         <Bold size={14} />
       </button>
       <button className="toolbar-btn" onClick={onItalic} title="Itálico (Ctrl+I)">
         <Italic size={14} />
+      </button>
+      <button className="toolbar-btn" onClick={onUnderline} title="Sublinhado (Ctrl+U)">
+        <Underline size={14} />
       </button>
       <div style={{ position: 'relative' }}>
         <button className="toolbar-btn" onClick={(e) => { e.stopPropagation(); onHeading(e); }} title="Título (Ctrl+H)">
@@ -95,10 +147,61 @@ export function EditorToolbar({
         <Smile size={14} />
         <span>Emoji</span>
       </button>
+
+      <button className="toolbar-btn" onClick={handleImageClick} title="Inserir Imagem" disabled={isUploadingImage}>
+        {isUploadingImage ? <Loader2 size={14} className="animate-spin" /> : <Image size={14} />}
+        <span>Imagem</span>
+      </button>
       
       <button className="toolbar-btn" onClick={onFormatDocument} title="Formatar Documento (Shift+Alt+F)">
         <AlignLeft size={14} />
         <span>Formatar</span>
+      </button>
+
+      <div className="toolbar-divider"></div>
+
+      <div style={{ position: 'relative' }}>
+        <button className="toolbar-btn" onClick={(e) => { e.stopPropagation(); onExportMenuToggle(e); }} title="Exportar e Compartilhar">
+          <Download size={14} />
+          <span>Exportar</span>
+          <ChevronDown size={12} />
+        </button>
+        {exportMenuOpen && (
+          <div className="toolbar-submenu" style={{ left: exportMenuPosition.x, top: exportMenuPosition.y }} onClick={(e) => e.stopPropagation()}>
+            <button className="submenu-item" onClick={onExportPDF}>
+              <FileType size={14} />
+              <span> Exportar como PDF</span>
+            </button>
+            <button className="submenu-item" onClick={onExportHTML}>
+              <FileText size={14} />
+              <span> Exportar como HTML</span>
+            </button>
+            <button className="submenu-item" onClick={onCopyHTML}>
+              <Copy size={14} />
+              <span> Copiar como HTML</span>
+            </button>
+            <div className="context-menu-divider" />
+            <button className="submenu-item" onClick={onShare}>
+              <Share2 size={14} />
+              <span> Gerar Link de Compartilhamento</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      <button className="toolbar-btn" onClick={onPresentation} title="Modo Apresentação">
+        <Presentation size={14} />
+        <span>Apresentação</span>
+      </button>
+
+
+      <button 
+        className={`toolbar-btn ${wordWrap ? 'active' : ''}`} 
+        onClick={onToggleWordWrap} 
+        title="Quebra de Linha Automática"
+      >
+        <WrapText size={14} />
+        <span>Wrap</span>
       </button>
 
       <button className="toolbar-btn" onClick={onToggleMinimap} title={showMinimap ? 'Ocultar Minimapa' : 'Mostrar Minimapa'}>

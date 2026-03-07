@@ -15,6 +15,7 @@ import {
   ClipboardCheck,
   AlignLeft,
   Smile,
+  Underline,
   Trash2
 } from 'lucide-react';
 
@@ -32,6 +33,7 @@ interface ContextMenuProps {
   editorActions: {
     bold: () => void;
     italic: () => void;
+    underline: () => void;
     heading: () => void;
     code: () => void;
     link: () => void;
@@ -115,6 +117,10 @@ export function ContextMenu({
         <div className="context-menu-item" onClick={editorActions.italic}>
           <Italic size={14} />
           <span>Itálico</span>
+        </div>
+        <div className="context-menu-item" onClick={editorActions.underline}>
+          <Underline size={14} />
+          <span>Sublinhado</span>
         </div>
         <div className="context-menu-item" onClick={editorActions.heading}>
           <Heading size={14} />

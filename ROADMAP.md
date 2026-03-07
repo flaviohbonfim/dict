@@ -71,25 +71,56 @@ Este documento contém o planejamento de desenvolvimento do **dict** desde a ver
 
 ---
 
-### Versão 0.8.0 - Exportação e Compartilhamento
+### Versão 0.8.0 - Exportação, Compartilhamento e Edição Avançada
 
-**Foco:** Compartilhar e exportar documentos
+**Foco:** Compartilhar e exportar documentos + Recursos avançados de edição
 
-| Feature           | Descrição                       | Prioridade | Status |
-| ----------------- | ------------------------------- | ---------- | ------ |
-| Exportar PDF      | Gerar PDF do Markdown           | 🔴 Alta    | 📋     |
-| Exportar HTML     | HTML standalone                 | 🔴 Alta    | 📋     |
-| Modo Apresentação | Fullscreen no preview           | 🟡 Média   | 📋     |
-| Copiar como HTML  | Copiar formatado para clipboard | 🟡 Média   | 📋     |
-| Compartilhar Link | Exportar para gist/cloud        | 🟢 Baixa   | 📋     |
+| Feature               | Descrição                                                | Prioridade | Status |
+| --------------------- | -------------------------------------------------------- | ---------- | ------ |
+| Exportar PDF          | Gerar PDF do Markdown                                    | 🔴 Alta    | 📋     |
+| Exportar HTML         | HTML standalone                                          | 🔴 Alta    | 📋     |
+| Modo Apresentação     | Fullscreen no preview                                    | 🟡 Média   | 📋     |
+| Copiar como HTML      | Copiar formatado para clipboard                          | 🟡 Média   | 📋     |
+| Compartilhar Link     | Exportar para gist/cloud                                 | 🟢 Baixa   | 📋     |
+| Texto Sublinhado      | Adicionar texto sublinhado (tag HTML `<u>`)              | 🔴 Alta    | 📋     |
+| Quebra Linha Automát. | Quebra visual automática no editor (não afeta o arquivo) | 🔴 Alta    | 📋     |
+| Inserir Imagem        | Inserir imagem via Uploadthing (hospedagem externa)      | 🔴 Alta    | �      |
+
+**Novas Features de Edição:**
+
+#### Texto Sublinhado
+
+- Usar tag HTML `<u></u>` para sublinhar texto selecionado
+- Adicionar botão na barra de ferramentas (EditorToolbar)
+- Adicionar opção no menu de contexto (ContextMenu)
+- Atalho de teclado: Ctrl+U
+
+#### Quebra de Linha Automática
+
+- Toggle na barra de ferramentas para ativar/desativar
+- Implementação visual via CSS (word-wrap: break-word ou overflow-wrap)
+- O arquivo markdown permanece inalterado (apenas visual)
+- Persistir preferência no localStorage
+
+#### Inserir Imagem
+
+- Seleção de arquivo via input type='file'
+- Upload para Uploadthing via API
+- Inserir link markdown `![alt](url)` no editor
+- Botão na barra de ferramentas e menu de contexto
+- Feedback visual durante upload (loading spinner)
+- Tratamento de erros (falha no upload, arquivo muito grande)
 
 **Benefícios:**
 
 - Compartilhamento profissional de documentos
 - Múltiplos formatos de saída
 - Apresentações diretas do editor
+- Editor de texto mais completo com sublinhado
+- Melhor experiência de edição com quebra automática de linha
+- Integração fácil de imagens via hospedagem externa
 
-**Duração Estimada:** 1-2 semanas
+**Duração Estimada:** 2-3 semanas
 
 ---
 

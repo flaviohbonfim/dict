@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Presentation } from 'lucide-react';
 import { ActivityBar } from './components/ActivityBar';
 import { Sidebar } from './components/Sidebar';
 import { EditorToolbar } from './components/EditorToolbar';
@@ -14,6 +15,8 @@ import { EmojiPickerComponent } from './components/EmojiPicker';
 import { SearchBar } from './components/SearchBar';
 import { Minimap } from './components/Minimap';
 import { formatMarkdown } from './utils/formatter';
+import { convertEmojiShortcodes } from './utils/emoji';
+import { marked } from 'marked';
 import './styles/global.css';
 import './styles/layout.css';
 
@@ -552,6 +555,9 @@ function App() {
     const saved = localStorage.getItem('dict-minimap');
     return saved !== 'false'; // Default true se não tiver salvo
   });
+  const [wordWrap, setWordWrap] = useState(() => {
+    return localStorage.getItem('dict-word-wrap') === 'true';
+  });
   const [editorScrollPercentage, setEditorScrollPercentage] = useState(0);
   // Search state
   const [showSearch, setShowSearch] = useState(false);
@@ -582,6 +588,17 @@ function App() {
     const saved = localStorage.getItem('dict-favorites');
     return saved ? JSON.parse(saved) : [];
   });
+  const [imgbbApiKey, setImgbbApiKey] = useState(() => {
+    return localStorage.getItem('dict-imgbb-api-key') || '';
+  });
+  const [githubToken, setGithubToken] = useState(() => {
+    return localStorage.getItem('dict-github-token') || '';
+  });
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isPresentationMode, setIsPresentationMode] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [exportMenuPosition, setExportMenuPosition] = useState({ x: 0, y: 0 });
+  
   const [files, setFiles] = useState<FileData[]>(() => {
     // Lazy initialization - carrega do localStorage no estado inicial
     const savedFiles = localStorage.getItem('dict-files');
@@ -719,15 +736,7 @@ function App() {
 
     if (autoSaveEnabled && files.length > 0) {
       localStorage.setItem('dict-files', JSON.stringify(files));
-      
-      // Marca como salvo (remove o dirty indicator) sem disparar novo render infinito
-      // Idealmente, o isDirty seria gerenciado separadamente ou via ref se necessário em massa
-      setTabs(prev => {
-        const hasDirty = prev.some(t => t.isDirty);
-        if (!hasDirty) return prev;
-        return prev.map(t => ({ ...t, isDirty: false }));
-      });
-      setLastSavedTime(new Date());
+      setTimeout(() => setLastSavedTime(new Date()), 0);
     }
   }, [files, autoSaveEnabled]);
 
@@ -747,6 +756,21 @@ function App() {
     localStorage.setItem('dict-sidebar', activeView);
   }, [activeView]);
 
+  // Salvar estado da quebra de linha no localStorage
+  useEffect(() => {
+    localStorage.setItem('dict-word-wrap', String(wordWrap));
+  }, [wordWrap]);
+
+  // Salvar API Key do ImgBB no localStorage
+  useEffect(() => {
+    localStorage.setItem('dict-imgbb-api-key', imgbbApiKey);
+  }, [imgbbApiKey]);
+
+  // Salvar GitHub Token no localStorage
+  useEffect(() => {
+    localStorage.setItem('dict-github-token', githubToken);
+  }, [githubToken]);
+
   // Fechar menu de contexto e submenus ao clicar fora
   useEffect(() => {
     const handleClick = () => {
@@ -759,11 +783,14 @@ function App() {
       if (mermaidMenuOpen) {
         setMermaidMenuOpen(false);
       }
+      if (exportMenuOpen) {
+        setExportMenuOpen(false);
+      }
     };
 
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
-  }, [contextMenu.visible, headingMenuOpen, mermaidMenuOpen]);
+  }, [contextMenu.visible, headingMenuOpen, mermaidMenuOpen, exportMenuOpen]);
 
   // Calcular posição do cursor
   const updateCursorPosition = useCallback(() => {
@@ -857,7 +884,7 @@ function App() {
 
     setTabs(prev => prev.map(t =>
       t.id === activeTabId
-        ? { ...t, content: newContent, isDirty: true }
+        ? { ...t, content: newContent, isDirty: !autoSaveEnabled }
         : t
     ));
 
@@ -866,7 +893,7 @@ function App() {
         ? { ...f, content: newContent }
         : f
     ));
-  }, [activeTab, activeTabId, historyIndex]);
+  }, [activeTab, activeTabId, historyIndex, autoSaveEnabled]);
 
   // Formatar o documento atual
   const handleFormatDocument = useCallback(() => {
@@ -965,8 +992,11 @@ function App() {
   useEffect(() => {
     if (searchQuery && activeTab) {
       // Re-run search to update matches with new content
-      // Reduzir chamadas desnecessárias comparando conteúdo se possível ou removendo length do dep
-      handleSearch(searchQuery, { matchCase: false, matchWholeWord: false });
+      // Use a small timeout to avoid cascading render warning
+      const timeoutId = setTimeout(() => {
+        handleSearch(searchQuery, { matchCase: false, matchWholeWord: false });
+      }, 50);
+      return () => clearTimeout(timeoutId);
     }
   }, [activeTab, searchQuery, handleSearch]);
 
@@ -1475,18 +1505,318 @@ function App() {
 
   const handleBold = () => insertFormatting('**', '**');
   const handleItalic = () => insertFormatting('*', '*');
+  const handleUnderline = () => insertFormatting('<u>', '</u>');
   const handleCode = () => insertFormatting('`', '`');
   const handleLink = () => insertFormatting('[', '](url)');
   const handleList = () => insertFormatting('- ', '');
+  const handleToggleWordWrap = () => setWordWrap(!wordWrap);
+
+  const handleImageUpload = (file: File) => {
+    if (!imgbbApiKey) {
+      alert('Por favor, configure sua API Key do ImgBB nas configurações primeiro.');
+      setShowSettings(true);
+      return;
+    }
+
+    setIsUploadingImage(true);
+    const formData = new FormData();
+    formData.append('image', file);
+
+    fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
+      method: 'POST',
+      body: formData,
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          const imageUrl = data.data.url;
+          insertFormatting(`![Imagem](${imageUrl})`, '');
+        } else {
+          alert('Erro ao fazer upload da imagem: ' + data.error.message);
+        }
+      })
+      .catch(error => {
+        console.error('Erro no upload:', error);
+        alert('Erro ao conectar com a API do ImgBB.');
+      })
+      .finally(() => {
+        setIsUploadingImage(false);
+      });
+  };
 
   // Handlers para submenu de Heading
   const handleHeadingMenu = (e: React.MouseEvent) => {
     const button = (e.target as HTMLElement).closest('button');
     if (button) {
       const rect = button.getBoundingClientRect();
-      setHeadingMenuPosition({ x: rect.left, y: rect.bottom + 5 });
+      setHeadingMenuPosition({ x: rect.left, y: rect.bottom });
       setHeadingMenuOpen(!headingMenuOpen);
       setMermaidMenuOpen(false);
+    }
+  };
+
+  const handleExportMenuToggle = (e: React.MouseEvent) => {
+    const button = (e.target as HTMLElement).closest('button');
+    if (button) {
+      const rect = button.getBoundingClientRect();
+      setExportMenuPosition({ x: rect.left, y: rect.bottom });
+      setExportMenuOpen(!exportMenuOpen);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    console.log('[PDF EXPORT] Initiated');
+    if (!activeTab) {
+      console.warn('[PDF EXPORT] No active tab to export.');
+      return;
+    }
+
+    console.log('[PDF EXPORT] Active tab found:', activeTab.name);
+
+    // Importações dinâmicas para não poluir o bundle principal
+    console.log('[PDF EXPORT] Loading html2pdf.js and mermaid...');
+    const html2pdf = (await import('html2pdf.js')).default;
+    const mermaid = (await import('mermaid')).default;
+    console.log('[PDF EXPORT] Libraries loaded.');
+
+    const containerId = `pdf-render-temp-${Date.now()}`;
+    const pdfContainer = document.createElement('div');
+
+    try {
+      // 1. Preparar conteúdo HTML
+      const contentWithEmojis = convertEmojiShortcodes(activeTab.content);
+      
+      const renderer = new marked.Renderer();
+      renderer.code = ({ text, lang }) => {
+        const language = lang?.trim().toLowerCase();
+        if (language === 'mermaid') {
+          return `<div class="mermaid-target">${text}</div>`;
+        }
+        return `<pre><code class="language-${language}">${text}</code></pre>`;
+      };
+
+      const htmlContent = String(marked.parse(contentWithEmojis, { renderer }));
+
+      // 2. Configurar container (não precisamos anexar ao DOM)
+      pdfContainer.id = containerId;
+      Object.assign(pdfContainer.style, {
+        width: '180mm', // Considera A4 (210) menos as margens laterais (2x 15mm)
+        backgroundColor: '#ffffff',
+        color: '#24292e',
+        padding: '0', // O padding interno é 0 pois html2pdf usará o margin nativo a cada página recortada
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+      });
+
+      pdfContainer.innerHTML = `
+        <style>
+          #${containerId} * { box-sizing: border-box; }
+          #${containerId} { font-size: 14px; line-height: 1.6; color: #24292e; background: #fff; }
+          #${containerId} * { page-break-inside: avoid; } /* Evita cortes no meio de qualquer linha de texto */
+          #${containerId} h1, #${containerId} h2, #${containerId} h3 { color: #000; margin-top: 24px; margin-bottom: 16px; font-weight: 600; page-break-after: avoid; page-break-inside: avoid; }
+          #${containerId} h1 { font-size: 2em; border-bottom: 2px solid #eaecef; padding-bottom: .3em; }
+          #${containerId} h2 { font-size: 1.5em; border-bottom: 1px solid #eaecef; padding-bottom: .3em; }
+          #${containerId} h3 { font-size: 1.25em; }
+          #${containerId} p { margin-top: 0; margin-bottom: 16px; page-break-inside: avoid; }
+          #${containerId} a { color: #0366d6; }
+          #${containerId} code { font-family: Consolas, "Liberation Mono", monospace; font-size: 0.85em; background: rgba(27,31,35,.05); padding: .2em .4em; border-radius: 3px; }
+          #${containerId} pre { background: #f6f8fa; padding: 16px; border-radius: 6px; border: 1px solid #dfe2e5; margin-bottom: 16px; overflow: visible; white-space: pre-wrap; word-wrap: break-word; page-break-inside: avoid; }
+          #${containerId} pre code { background: transparent; padding: 0; white-space: pre-wrap; word-wrap: break-word; }
+          #${containerId} table { border-collapse: collapse; width: 100%; margin-bottom: 16px; page-break-inside: auto; }
+          #${containerId} tr { page-break-inside: avoid; page-break-after: auto; }
+          #${containerId} th, #${containerId} td { padding: 6px 13px; border: 1px solid #dfe2e5; }
+          #${containerId} th { background: #f1f3f5; font-weight: 600; }
+          #${containerId} tr:nth-child(even) { background: #f6f8fa; }
+          #${containerId} blockquote { border-left: 4px solid #dfe2e5; padding: 8px 16px; margin: 0 0 16px 0; color: #6a737d; background: #f6f8fa; page-break-inside: avoid; }
+          #${containerId} ul, #${containerId} ol { margin-bottom: 16px; padding-left: 2em; page-break-inside: auto; }
+          #${containerId} li { margin-bottom: 6px; page-break-inside: avoid; }
+          #${containerId} img { max-width: 100%; page-break-inside: avoid; }
+          #${containerId} .mermaid-target { text-align: center; margin-bottom: 16px; page-break-inside: avoid; }
+          #${containerId} hr { border: none; border-top: 1px solid #eaecef; margin: 24px 0; }
+        </style>
+        ${htmlContent}
+      `;
+
+      // 3. Renderizar diagramas Mermaid sem colocar no DOM
+      console.log('[PDF EXPORT] Initializing Mermaid...');
+      mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+      const mermaidEls = pdfContainer.querySelectorAll('.mermaid-target');
+      console.log(`[PDF EXPORT] Found ${mermaidEls.length} mermaid diagrams`);
+      for (let i = 0; i < mermaidEls.length; i++) {
+        const el = mermaidEls[i];
+        const def = el.textContent?.trim() || '';
+        if (def) {
+          try {
+            const { svg } = await mermaid.render(`mermaid-pdf-${i}`, def);
+            el.innerHTML = svg;
+          } catch {
+            el.textContent = '[diagrama não disponível]';
+          }
+        }
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // 4. Gerar PDF
+      console.log('[PDF EXPORT] Calling html2pdf().save()...');
+      const opt = {
+        margin: [15, 15], // 15mm no topo/baixo e 15mm na esquerda/direita para todas as páginas
+        filename: `${activeTab.name.replace(/\.md$/, '')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          logging: false
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      // @ts-expect-error - html2pdf type issues
+      await html2pdf().set(opt).from(pdfContainer).save();
+      console.log('[PDF EXPORT] PDF generation completed successfully.');
+
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      alert('Erro ao gerar o PDF. Verifique o console.');
+    } finally {
+      setExportMenuOpen(false);
+    }
+  };
+
+  const handleExportHTML = () => {
+    if (!activeTab) return;
+    
+    // Convert emojis first
+    const contentWithEmojis = convertEmojiShortcodes(activeTab.content);
+    
+    // Ensure mermaid blocks are wrapped correctly for the script
+    const renderer = new marked.Renderer();
+    renderer.code = ({ text, lang }) => {
+      const language = lang?.trim().toLowerCase();
+      if (language === 'mermaid') {
+        return `<div class="mermaid">${text}</div>`;
+      }
+      return `<pre><code class="language-${language}">${text}</code></pre>`;
+    };
+
+    const htmlContent = marked.parse(contentWithEmojis, { renderer });
+    const fullHtml = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${activeTab.name}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.2.4/dist/mermaid.min.js"></script>
+    <style>
+        body { 
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+          line-height: 1.6; 
+          padding: 40px; 
+          max-width: 900px; 
+          margin: 0 auto; 
+          color: #24292e;
+          background-color: #ffffff;
+        }
+        h1, h2, h3 { border-bottom: 1px solid #eaecef; padding-bottom: .3em; }
+        pre { background: #f6f8fa; padding: 16px; border-radius: 6px; overflow-x: auto; }
+        code { background: rgba(27,31,35,.05); padding: .2em .4em; border-radius: 3px; font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace; }
+        pre code { background: transparent; padding: 0; }
+        img { max-width: 100%; box-sizing: content-box; background-color: #fff; }
+        table { border-spacing: 0; border-collapse: collapse; width: 100%; margin-top: 0; margin-bottom: 16px; }
+        table th, table td { padding: 6px 13px; border: 1px solid #dfe2e5; }
+        table tr { background-color: #fff; border-top: 1px solid #c6cbd1; }
+        table tr:nth-child(2n) { background-color: #f6f8fa; }
+        .mermaid { margin-bottom: 16px; display: flex; justify-content: center; }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        ${htmlContent}
+    </div>
+    <script>
+        mermaid.initialize({ 
+          startOnLoad: true, 
+          theme: 'default',
+          securityLevel: 'loose'
+        });
+    </script>
+</body>
+</html>`;
+    
+    const blob = new Blob([fullHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${activeTab.name}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setExportMenuOpen(false);
+  };
+
+  const handleCopyHTML = async () => {
+    if (!activeTab) return;
+    const contentWithEmojis = convertEmojiShortcodes(activeTab.content);
+    const htmlContent = marked.parse(contentWithEmojis);
+    try {
+      await navigator.clipboard.writeText(String(htmlContent));
+      alert('HTML copiado para a área de transferência!');
+      setExportMenuOpen(false);
+    } catch (error) {
+      console.error('Erro ao copiar HTML:', error);
+    }
+  };
+
+  const handlePresentation = () => {
+    setIsPresentationMode(!isPresentationMode);
+    if (!isPresentationMode) {
+      setViewMode('preview');
+    }
+  };
+
+  const handleShare = async () => {
+    if (!activeTab) return;
+    
+    if (!githubToken) {
+      alert('Por favor, configure seu GitHub Token nas configurações para criar um Gist.');
+      setShowSettings(true);
+      return;
+    }
+
+    try {
+      const response = await fetch('https://api.github.com/gists', {
+        method: 'POST',
+        headers: {
+          'Authorization': `token ${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          description: `Documento compartilhado via dict: ${activeTab.name}`,
+          public: true,
+          files: {
+            [activeTab.name.endsWith('.md') ? activeTab.name : `${activeTab.name}.md`]: {
+              content: activeTab.content
+            }
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro API GitHub: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const gistUrl = data.html_url;
+      
+      await navigator.clipboard.writeText(gistUrl);
+      alert('Gist criado com sucesso! O link foi copiado para a área de transferência.');
+      setExportMenuOpen(false);
+    } catch (error) {
+      console.error('Erro ao criar Gist:', error);
+      alert('Erro ao criar Gist. Verifique seu token e conexão.');
     }
   };
 
@@ -1766,7 +2096,13 @@ graph TD
   }, [showSearch, showSettings, showChangelog, showEmojiPicker, showConfirmModal, showGoToLine, handleFormatDocument, handleSave, activeView, setViewMode, setActiveView, setShowSettings, setShowSearch, setShowGoToLine, setShowConfirmModal]);
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${isPresentationMode ? 'presentation-mode' : ''}`}>
+      {isPresentationMode && (
+        <button className="presentation-exit-btn" onClick={() => setIsPresentationMode(false)}>
+          <Presentation size={14} />
+          <span>Sair da Apresentação</span>
+        </button>
+      )}
       {/* Main Layout */}
       <div 
         className="main-layout"
@@ -1861,6 +2197,7 @@ graph TD
             onViewModeChange={setViewMode}
             onBold={handleBold}
             onItalic={handleItalic}
+            onUnderline={handleUnderline}
             onHeading={handleHeadingMenu}
             onHeadingSelect={handleHeading}
             headingMenuOpen={headingMenuOpen}
@@ -1876,6 +2213,18 @@ graph TD
             showMinimap={showMinimap}
             onToggleMinimap={() => setShowMinimap(!showMinimap)}
             onFormatDocument={handleFormatDocument}
+            wordWrap={wordWrap}
+            onToggleWordWrap={handleToggleWordWrap}
+            onImageUpload={handleImageUpload}
+            isUploadingImage={isUploadingImage}
+            onExportPDF={handleExportPDF}
+            onExportHTML={handleExportHTML}
+            onCopyHTML={handleCopyHTML}
+            onPresentation={handlePresentation}
+            onShare={handleShare}
+            exportMenuOpen={exportMenuOpen}
+            onExportMenuToggle={handleExportMenuToggle}
+            exportMenuPosition={exportMenuPosition}
           />
 
           {/* Editor Split View */}
@@ -1906,6 +2255,7 @@ graph TD
                     onScroll={(percentage) => {
                       setEditorScrollPercentage(percentage);
                     }}
+                    wordWrap={wordWrap}
                   />
                 </div>
                 <div
@@ -1962,6 +2312,10 @@ graph TD
                 onSyncScrollChange={() => setSyncScroll(!syncScroll)}
                 autoSave={autoSaveEnabled}
                 onAutoSaveChange={() => setAutoSaveEnabled(!autoSaveEnabled)}
+                imgbbApiKey={imgbbApiKey}
+                onImgbbApiKeyChange={setImgbbApiKey}
+                githubToken={githubToken}
+                onGithubTokenChange={setGithubToken}
               />
             </div>
           </div>
@@ -2090,13 +2444,14 @@ graph TD
           editorActions={{
             bold: handleBold,
             italic: handleItalic,
+            underline: handleUnderline,
             heading: () => handleHeading(2),
             code: handleCode,
             link: handleLink,
             list: handleList,
             mermaid: () => handleMermaid('flowchart'),
             format: handleFormatDocument,
-            emoji: handleEmoji
+            emoji: () => setShowEmojiPicker(true)
           }}
           previewActions={{
             selectAll: handlePreviewSelectAll,
