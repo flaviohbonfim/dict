@@ -7,6 +7,8 @@ import {
   FileText,
   Save,
   MoveVertical,
+  Image,
+  Github,
 } from "lucide-react";
 
 interface SettingsPanelProps {
@@ -18,6 +20,10 @@ interface SettingsPanelProps {
   onSyncScrollChange: () => void;
   autoSave: boolean;
   onAutoSaveChange: () => void;
+  imgbbApiKey: string;
+  onImgbbApiKeyChange: (key: string) => void;
+  githubToken: string;
+  onGithubTokenChange: (token: string) => void;
 }
 
 export function SettingsPanel({
@@ -29,6 +35,10 @@ export function SettingsPanel({
   onSyncScrollChange,
   autoSave,
   onAutoSaveChange,
+  imgbbApiKey,
+  onImgbbApiKeyChange,
+  githubToken,
+  onGithubTokenChange,
 }: SettingsPanelProps) {
   return (
     <div className="settings-panel">
@@ -39,6 +49,44 @@ export function SettingsPanel({
         </button>
       </div>
       <div className="settings-content">
+        <div className="settings-section">
+          <h3>
+            <Image size={16} />
+            Upload de Imagem (ImgBB)
+          </h3>
+          <div className="imgbb-config">
+            <input
+              type="password"
+              className="imgbb-api-input"
+              placeholder="Cole sua API Key do ImgBB"
+              value={imgbbApiKey}
+              onChange={(e) => onImgbbApiKeyChange(e.target.value)}
+            />
+            <p className="imgbb-help">
+              Obtain a free API key at <a href="https://api.imgbb.com/" target="_blank" rel="noopener noreferrer">imgbb.com</a>
+            </p>
+          </div>
+        </div>
+
+        <div className="settings-section">
+          <h3>
+            <Github size={16} />
+            GitHub (Gist)
+          </h3>
+          <div className="imgbb-config">
+            <input
+              type="password"
+              className="imgbb-api-input"
+              placeholder="Cole seu GitHub Personal Access Token"
+              value={githubToken}
+              onChange={(e) => onGithubTokenChange(e.target.value)}
+            />
+            <p className="imgbb-help">
+              Required for gist sharing. <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">Generate token</a> with 'gist' scope.
+            </p>
+          </div>
+        </div>
+
         <div className="settings-section">
           <h3>
             <Save size={16} />

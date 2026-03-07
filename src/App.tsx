@@ -14,6 +14,10 @@ import { EmojiPickerComponent } from './components/EmojiPicker';
 import { SearchBar } from './components/SearchBar';
 import { Minimap } from './components/Minimap';
 import { formatMarkdown } from './utils/formatter';
+import { uploadToImgbb } from './utils/uploadImage';
+import { generateHtmlContent, downloadHtml } from './utils/exportHtml';
+import { exportToPdf } from './utils/exportPdf';
+import { createGist } from './utils/gistApi';
 import './styles/global.css';
 import './styles/layout.css';
 
@@ -552,6 +556,21 @@ function App() {
     const saved = localStorage.getItem('dict-minimap');
     return saved !== 'false'; // Default true se não tiver salvo
   });
+  const [wordWrap, setWordWrap] = useState(() => {
+    const saved = localStorage.getItem('dict-wordwrap');
+    return saved === 'true';
+  });
+  const [imgbbApiKey, setImgbbApiKey] = useState(() => {
+    return localStorage.getItem('dict-imgbb-api-key') || '';
+  });
+  const [presentationMode, setPresentationMode] = useState(false);
+  const [presentationSlide, setPresentationSlide] = useState(0);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [githubToken, setGithubToken] = useState(() => {
+    return localStorage.getItem('dict-github-token') || '';
+  });
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareResult, setShareResult] = useState<string | null>(null);
   const [editorScrollPercentage, setEditorScrollPercentage] = useState(0);
   // Search state
   const [showSearch, setShowSearch] = useState(false);
@@ -746,6 +765,11 @@ function App() {
   useEffect(() => {
     localStorage.setItem('dict-sidebar', activeView);
   }, [activeView]);
+
+  // Salvar estado do word wrap no localStorage
+  useEffect(() => {
+    localStorage.setItem('dict-wordwrap', wordWrap.toString());
+  }, [wordWrap]);
 
   // Fechar menu de contexto e submenus ao clicar fora
   useEffect(() => {
@@ -1475,9 +1499,157 @@ function App() {
 
   const handleBold = () => insertFormatting('**', '**');
   const handleItalic = () => insertFormatting('*', '*');
+  const handleUnderline = () => insertFormatting('<u>', '</u>');
   const handleCode = () => insertFormatting('`', '`');
   const handleLink = () => insertFormatting('[', '](url)');
   const handleList = () => insertFormatting('- ', '');
+
+  const handleInsertImage = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      if (!imgbbApiKey) {
+        alert('Configure a API Key do ImgBB nas Configurações primeiro.');
+        return;
+      }
+
+      try {
+        const imageUrl = await uploadToImgbb(file);
+        const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+        if (!textarea || !activeTab) return;
+
+        const start = textarea.selectionStart;
+        const imageMarkdown = `![${file.name}](${imageUrl})`;
+        const newContent = activeTab.content.substring(0, start) + imageMarkdown + activeTab.content.substring(textarea.selectionEnd);
+        handleContentChange(newContent);
+
+        setTimeout(() => {
+          textarea.focus();
+          textarea.selectionStart = textarea.selectionEnd = start + imageMarkdown.length;
+        }, 0);
+      } catch (error) {
+        alert(error instanceof Error ? error.message : 'Erro ao fazer upload da imagem');
+      }
+    };
+    input.click();
+  };
+
+  const handleExportHtml = async () => {
+    if (!activeTab) return;
+    const filename = activeFile?.name.replace('.md', '.html') || 'document.html';
+    try {
+      await downloadHtml(activeTab.content, filename, theme);
+    } catch (error) {
+      alert('Erro ao exportar HTML: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
+    }
+  };
+
+  const handleExportPdf = async () => {
+    if (!activeTab) return;
+    const filename = activeFile?.name.replace('.md', '.pdf') || 'document.pdf';
+    try {
+      await exportToPdf(activeTab.content, filename);
+    } catch (error) {
+      alert('Erro ao exportar PDF: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
+    }
+  };
+
+  const handleCopyAsHtml = async () => {
+    if (!activeTab) return;
+    try {
+      const html = await generateHtmlContent(activeTab.content, theme);
+      await navigator.clipboard.writeText(html);
+      alert('HTML copiado para a área de transferência!');
+    } catch (error) {
+      alert('Erro ao copiar HTML: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
+    }
+  };
+
+  const extractSlides = (markdown: string): string[] => {
+    const lines = markdown.split('\n');
+    const slides: string[] = [];
+    let currentSlide = '';
+
+    for (const line of lines) {
+      if (line.match(/^#{1,2}\s/)) {
+        if (currentSlide.trim()) {
+          slides.push(currentSlide.trim());
+        }
+        currentSlide = line + '\n';
+      } else {
+        currentSlide += line + '\n';
+      }
+    }
+
+    if (currentSlide.trim()) {
+      slides.push(currentSlide.trim());
+    }
+
+    return slides.length > 0 ? slides : [markdown];
+  };
+
+  const handleTogglePresentation = () => {
+    if (!activeTab) return;
+
+    if (!presentationMode) {
+      setPresentationSlide(0);
+      setPresentationMode(true);
+      document.documentElement.requestFullscreen?.();
+    } else {
+      setPresentationMode(false);
+      if (document.fullscreenElement) {
+        document.exitFullscreen?.();
+      }
+    }
+  };
+
+  const handleNextSlide = useCallback(() => {
+    const slides = extractSlides(activeTab?.content || '');
+    if (presentationSlide < slides.length - 1) {
+      setPresentationSlide(prev => prev + 1);
+    }
+  }, [activeTab, presentationSlide]);
+
+  const handlePrevSlide = useCallback(() => {
+    if (presentationSlide > 0) {
+      setPresentationSlide(prev => prev - 1);
+    }
+  }, [presentationSlide]);
+
+  const handleShareGist = async (isPublic: boolean = false) => {
+    if (!activeTab || !activeFile) return;
+
+    if (!githubToken) {
+      alert('Configure seu GitHub Personal Access Token nas Configurações primeiro.');
+      return;
+    }
+
+    setIsSharing(true);
+    setShareResult(null);
+
+    try {
+      const gist = await createGist(
+        [{ filename: activeFile.name, content: activeTab.content }],
+        `Compartilhado via dict - ${activeFile.name}`,
+        isPublic,
+        githubToken
+      );
+      setShareResult(gist.html_url);
+    } catch (error) {
+      alert('Erro ao criar gist: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleOpenShareModal = () => {
+    setShowShareModal(true);
+    setShareResult(null);
+  };
 
   // Handlers para submenu de Heading
   const handleHeadingMenu = (e: React.MouseEvent) => {
@@ -1730,6 +1902,30 @@ graph TD
         return;
       }
 
+      // Modo Apresentação - ESC para sair
+      if (e.key === 'Escape' && presentationMode) {
+        e.preventDefault();
+        setPresentationMode(false);
+        if (document.fullscreenElement) {
+          document.exitFullscreen?.();
+        }
+        return;
+      }
+
+      // Modo Apresentação - Setas para navegar
+      if (presentationMode) {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          handleNextSlide();
+          return;
+        }
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          handlePrevSlide();
+          return;
+        }
+      }
+
       // Alternar view mode (Ctrl+\)
       if (e.ctrlKey && e.key === '\\') {
         e.preventDefault();
@@ -1763,7 +1959,7 @@ graph TD
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showSearch, showSettings, showChangelog, showEmojiPicker, showConfirmModal, showGoToLine, handleFormatDocument, handleSave, activeView, setViewMode, setActiveView, setShowSettings, setShowSearch, setShowGoToLine, setShowConfirmModal]);
+  }, [showSearch, showSettings, showChangelog, showEmojiPicker, showConfirmModal, showGoToLine, handleFormatDocument, handleSave, activeView, setViewMode, setActiveView, setShowSettings, setShowSearch, setShowGoToLine, setShowConfirmModal, presentationMode, handleNextSlide, handlePrevSlide]);
 
   return (
     <div className="app-container">
@@ -1861,6 +2057,7 @@ graph TD
             onViewModeChange={setViewMode}
             onBold={handleBold}
             onItalic={handleItalic}
+            onUnderline={handleUnderline}
             onHeading={handleHeadingMenu}
             onHeadingSelect={handleHeading}
             headingMenuOpen={headingMenuOpen}
@@ -1868,6 +2065,12 @@ graph TD
             onCode={handleCode}
             onLink={handleLink}
             onList={handleList}
+            onInsertImage={handleInsertImage}
+            onExportHtml={handleExportHtml}
+            onExportPdf={handleExportPdf}
+            onCopyAsHtml={handleCopyAsHtml}
+            onTogglePresentation={handleTogglePresentation}
+            onShare={handleOpenShareModal}
             onMermaid={handleMermaidMenu}
             onMermaidSelect={handleMermaid}
             mermaidMenuOpen={mermaidMenuOpen}
@@ -1876,6 +2079,8 @@ graph TD
             showMinimap={showMinimap}
             onToggleMinimap={() => setShowMinimap(!showMinimap)}
             onFormatDocument={handleFormatDocument}
+            wordWrap={wordWrap}
+            onToggleWordWrap={() => setWordWrap(!wordWrap)}
           />
 
           {/* Editor Split View */}
@@ -1906,6 +2111,7 @@ graph TD
                     onScroll={(percentage) => {
                       setEditorScrollPercentage(percentage);
                     }}
+                    wordWrap={wordWrap}
                   />
                 </div>
                 <div
@@ -1962,6 +2168,16 @@ graph TD
                 onSyncScrollChange={() => setSyncScroll(!syncScroll)}
                 autoSave={autoSaveEnabled}
                 onAutoSaveChange={() => setAutoSaveEnabled(!autoSaveEnabled)}
+                imgbbApiKey={imgbbApiKey}
+                onImgbbApiKeyChange={(key) => {
+                  setImgbbApiKey(key);
+                  localStorage.setItem('dict-imgbb-api-key', key);
+                }}
+                githubToken={githubToken}
+                onGithubTokenChange={(token) => {
+                  setGithubToken(token);
+                  localStorage.setItem('dict-github-token', token);
+                }}
               />
             </div>
           </div>
@@ -2049,6 +2265,99 @@ graph TD
             position={emojiPickerPosition}
           />
         )}
+
+        {/* Presentation Mode */}
+        {presentationMode && activeTab && (
+          <div className="presentation-overlay">
+            <div className="presentation-content">
+              <Preview
+                content={extractSlides(activeTab.content)[presentationSlide]}
+                syncScroll={false}
+                theme={theme}
+                scrollSource={null}
+              />
+            </div>
+            <div className="presentation-controls">
+              <button 
+                className="presentation-btn" 
+                onClick={handlePrevSlide}
+                disabled={presentationSlide === 0}
+              >
+                ← Anterior
+              </button>
+              <span className="presentation-counter">
+                {presentationSlide + 1} / {extractSlides(activeTab.content).length}
+              </span>
+              <button 
+                className="presentation-btn" 
+                onClick={handleNextSlide}
+                disabled={presentationSlide === extractSlides(activeTab.content).length - 1}
+              >
+                Próximo →
+              </button>
+              <button 
+                className="presentation-btn presentation-exit" 
+                onClick={handleTogglePresentation}
+              >
+                Sair (ESC)
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Share Modal */}
+        {showShareModal && (
+          <div className="modal-overlay" onClick={() => setShowShareModal(false)}>
+            <div className="share-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Compartilhar via GitHub Gist</h2>
+                <button className="modal-close" onClick={() => setShowShareModal(false)}>
+                  ×
+                </button>
+              </div>
+              <div className="modal-body">
+                {!githubToken ? (
+                  <div className="share-warning">
+                    <p>Você precisa configurar um GitHub Personal Access Token nas Configurações para compartilhar.</p>
+                  </div>
+                ) : shareResult ? (
+                  <div className="share-success">
+                    <p>Gist criado com sucesso!</p>
+                    <a href={shareResult} target="_blank" rel="noopener noreferrer" className="share-link">
+                      {shareResult}
+                    </a>
+                    <button 
+                      className="btn btn-primary" 
+                      onClick={() => navigator.clipboard.writeText(shareResult)}
+                    >
+                      Copiar Link
+                    </button>
+                  </div>
+                ) : (
+                  <div className="share-options">
+                    <p>Escolha o tipo de compartilhamento:</p>
+                    <div className="share-buttons">
+                      <button 
+                        className="btn btn-primary" 
+                        onClick={() => handleShareGist(false)}
+                        disabled={isSharing}
+                      >
+                        {isSharing ? 'Criando...' : 'Gist Privado'}
+                      </button>
+                      <button 
+                        className="btn btn-secondary" 
+                        onClick={() => handleShareGist(true)}
+                        disabled={isSharing}
+                      >
+                        {isSharing ? 'Criando...' : 'Gist Público'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Status Bar */}
@@ -2090,9 +2399,11 @@ graph TD
           editorActions={{
             bold: handleBold,
             italic: handleItalic,
+            underline: handleUnderline,
             heading: () => handleHeading(2),
             code: handleCode,
             link: handleLink,
+            image: handleInsertImage,
             list: handleList,
             mermaid: () => handleMermaid('flowchart'),
             format: handleFormatDocument,

@@ -12,6 +12,7 @@
   "dependencies": {
     "@types/highlight.js": "^9.12.4",
     "highlight.js": "^11.11.1",
+    "html2pdf.js": "^0.14.0",
     "lucide-react": "^0.577.0",
     "marked": "^17.0.4",
     "mermaid": "^11.12.3",

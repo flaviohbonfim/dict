@@ -13,6 +13,7 @@ interface TextEditorProps {
   searchMatches?: { start: number; end: number }[];
   currentMatchIndex?: number;
   onScroll?: (percentage: number) => void;
+  wordWrap?: boolean;
 }
 
 export function TextEditor({
@@ -26,7 +27,8 @@ export function TextEditor({
   searchQuery = '',
   searchMatches = [],
   currentMatchIndex = -1,
-  onScroll
+  onScroll,
+  wordWrap = false
 }: TextEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
@@ -381,6 +383,12 @@ export function TextEditor({
       e.preventDefault();
       insertAroundCursor('`', '`');
     }
+
+    // Sublinhado (Ctrl+U)
+    if (e.ctrlKey && e.key === 'u') {
+      e.preventDefault();
+      insertAroundCursor('<u>', '</u>');
+    }
   }, [value, onChange, onSave, showAutocomplete, insertAroundCursor]);
 
 
@@ -403,7 +411,7 @@ export function TextEditor({
         />
         <textarea
           ref={textareaRef}
-          className="text-editor"
+          className={`text-editor ${wordWrap ? 'word-wrap' : 'no-wrap'}`}
           value={value}
           onChange={(e) => handleContentChange(e.target.value, e.target.selectionStart)}
           onScroll={handleScroll}

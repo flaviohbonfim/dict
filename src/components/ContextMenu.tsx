@@ -6,9 +6,11 @@ import {
   X,
   Bold,
   Italic,
+  Underline,
   Heading,
   Code2,
   Link,
+  Image,
   List,
   GitGraph,
   Type,
@@ -32,9 +34,11 @@ interface ContextMenuProps {
   editorActions: {
     bold: () => void;
     italic: () => void;
+    underline: () => void;
     heading: () => void;
     code: () => void;
     link: () => void;
+    image: () => void;
     list: () => void;
     mermaid: () => void;
     format: () => void;
@@ -116,6 +120,11 @@ export function ContextMenu({
           <Italic size={14} />
           <span>Itálico</span>
         </div>
+        <div className="context-menu-item" onClick={editorActions.underline}>
+          <Underline size={14} />
+          <span>Sublinhado</span>
+        </div>
+        <div className="context-menu-divider" />
         <div className="context-menu-item" onClick={editorActions.heading}>
           <Heading size={14} />
           <span>Título</span>
@@ -128,6 +137,10 @@ export function ContextMenu({
         <div className="context-menu-item" onClick={editorActions.link}>
           <Link size={14} />
           <span>Link</span>
+        </div>
+        <div className="context-menu-item" onClick={editorActions.image}>
+          <Image size={14} />
+          <span>Inserir Imagem</span>
         </div>
         <div className="context-menu-item" onClick={editorActions.list}>
           <List size={14} />
