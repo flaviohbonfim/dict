@@ -661,8 +661,8 @@
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background: var(--button-bg);
-  color: var(--button-text);
+  background: var(--button-bg, var(--bg-secondary));
+  color: var(--button-text, var(--text-primary));
   border: 1px solid var(--border);
   padding: 8px 16px;
   border-radius: 4px;
@@ -675,7 +675,7 @@
 }
 
 .fullscreen-exit-btn:hover {
-  background: var(--button-hover);
+  background: var(--button-hover, var(--hover-bg));
 }
 
 .text-editor::selection {
@@ -1882,6 +1882,173 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.imgbb-config {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.imgbb-api-input {
+  width: 100%;
+  padding: 10px 12px;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+}
+
+.imgbb-api-input:focus {
+  border-color: var(--accent);
+}
+
+.imgbb-help {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.imgbb-help a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.imgbb-help a:hover {
+  text-decoration: underline;
+}
+
+/* Presentation Mode */
+.presentation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--bg-primary);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+}
+
+.presentation-content {
+  flex: 1;
+  overflow: auto;
+  padding: 40px;
+  display: flex;
+  justify-content: center;
+}
+
+.presentation-content .preview-content {
+  max-width: 900px;
+  width: 100%;
+  font-size: 18px;
+  line-height: 1.8;
+}
+
+.presentation-content .preview-content h1 {
+  font-size: 2.5em;
+}
+
+.presentation-content .preview-content h2 {
+  font-size: 1.8em;
+}
+
+.presentation-content .preview-content h3 {
+  font-size: 1.4em;
+}
+
+.presentation-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px;
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+}
+
+.presentation-btn {
+  padding: 10px 20px;
+  background-color: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s ease;
+}
+
+.presentation-btn:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.presentation-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.presentation-exit {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.presentation-exit:hover {
+  background-color: var(--hover-bg);
+  border-color: var(--accent);
+}
+
+.presentation-counter {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* Share Modal */
+.share-modal {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.share-warning {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.share-success {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+
+.share-link {
+  color: var(--accent);
+  word-break: break-all;
+  text-align: center;
+}
+
+.share-options {
+  text-align: center;
+}
+
+.share-options p {
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+.share-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
 }
 
 /* Responsividade */

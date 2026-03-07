@@ -556,8 +556,14 @@ function App() {
     return saved !== 'false'; // Default true se não tiver salvo
   });
   const [wordWrap, setWordWrap] = useState(() => {
-    return localStorage.getItem('dict-word-wrap') === 'true';
+    const saved = localStorage.getItem('dict-word-wrap');
+    return saved === 'true';
   });
+  const [isSlidesMode, setIsSlidesMode] = useState(false);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareResult, setShareResult] = useState<string | null>(null);
   const [editorScrollPercentage, setEditorScrollPercentage] = useState(0);
   // Search state
   const [showSearch, setShowSearch] = useState(false);
@@ -1544,6 +1550,61 @@ function App() {
       });
   };
 
+
+
+  const extractSlides = (markdown: string): string[] => {
+    const lines = markdown.split('\n');
+    const slides: string[] = [];
+    let currentSlide = '';
+
+    for (const line of lines) {
+      if (line.match(/^#{1,2}\s/)) {
+        if (currentSlide.trim()) {
+          slides.push(currentSlide.trim());
+        }
+        currentSlide = line + '\n';
+      } else {
+        currentSlide += line + '\n';
+      }
+    }
+
+    if (currentSlide.trim()) {
+      slides.push(currentSlide.trim());
+    }
+
+    return slides.length > 0 ? slides : [markdown];
+  };
+
+  const handleToggleSlides = () => {
+    if (!activeTab) return;
+
+    if (!isSlidesMode) {
+      setCurrentSlideIndex(0);
+      setIsSlidesMode(true);
+      document.documentElement.requestFullscreen?.();
+    } else {
+      setIsSlidesMode(false);
+      if (document.fullscreenElement) {
+        document.exitFullscreen?.();
+      }
+    }
+  };
+
+  const handleNextSlide = useCallback(() => {
+    const slides = extractSlides(activeTab?.content || '');
+    if (currentSlideIndex < slides.length - 1) {
+      setCurrentSlideIndex(prev => prev + 1);
+    }
+  }, [activeTab, currentSlideIndex]);
+
+  const handlePrevSlide = useCallback(() => {
+    if (currentSlideIndex > 0) {
+      setCurrentSlideIndex(prev => prev - 1);
+    }
+  }, [currentSlideIndex]);
+
+
+
   // Handlers para submenu de Heading
   const handleHeadingMenu = (e: React.MouseEvent) => {
     const button = (e.target as HTMLElement).closest('button');
@@ -1776,7 +1837,7 @@ function App() {
     }
   };
 
-  const handleShare = async () => {
+  const handleShare = async (isPublic: boolean = true) => {
     if (!activeTab) return;
     
     if (!githubToken) {
@@ -1784,6 +1845,9 @@ function App() {
       setShowSettings(true);
       return;
     }
+
+    setIsSharing(true);
+    setShareResult(null);
 
     try {
       const response = await fetch('https://api.github.com/gists', {
@@ -1795,7 +1859,7 @@ function App() {
         },
         body: JSON.stringify({
           description: `Documento compartilhado via dict: ${activeTab.name}`,
-          public: true,
+          public: isPublic,
           files: {
             [activeTab.name.endsWith('.md') ? activeTab.name : `${activeTab.name}.md`]: {
               content: activeTab.content
@@ -1811,13 +1875,37 @@ function App() {
       const data = await response.json();
       const gistUrl = data.html_url;
       
+      setShareResult(gistUrl);
       await navigator.clipboard.writeText(gistUrl);
-      alert('Gist criado com sucesso! O link foi copiado para a área de transferência.');
-      setExportMenuOpen(false);
+      // Solo alertar si no estamos en el modal de compartir
+      if (!showShareModal) {
+        alert('Gist criado com sucesso! O link foi copiado para a área de transferência.');
+        setExportMenuOpen(false);
+      }
     } catch (error) {
       console.error('Erro ao criar Gist:', error);
       alert('Erro ao criar Gist. Verifique seu token e conexão.');
+    } finally {
+      setIsSharing(false);
     }
+  };
+
+  const handleOpenShareModal = () => {
+    setShowShareModal(true);
+    setShareResult(null);
+  };
+
+  const handleInsertImage = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        handleImageUpload(file);
+      }
+    };
+    input.click();
   };
 
   const handleHeading = (level: number) => {
@@ -2060,6 +2148,30 @@ graph TD
         return;
       }
 
+      // Modo Slides - ESC para sair
+      if (e.key === 'Escape' && isSlidesMode) {
+        e.preventDefault();
+        setIsSlidesMode(false);
+        if (document.fullscreenElement) {
+          document.exitFullscreen?.();
+        }
+        return;
+      }
+
+      // Modo Slides - Setas para navegar
+      if (isSlidesMode) {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          handleNextSlide();
+          return;
+        }
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          handlePrevSlide();
+          return;
+        }
+      }
+
       // Alternar view mode (Ctrl+\)
       if (e.ctrlKey && e.key === '\\') {
         e.preventDefault();
@@ -2093,7 +2205,7 @@ graph TD
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showSearch, showSettings, showChangelog, showEmojiPicker, showConfirmModal, showGoToLine, handleFormatDocument, handleSave, activeView, setViewMode, setActiveView, setShowSettings, setShowSearch, setShowGoToLine, setShowConfirmModal]);
+  }, [showSearch, showSettings, showChangelog, showEmojiPicker, showConfirmModal, showGoToLine, handleFormatDocument, handleSave, activeView, setViewMode, setActiveView, setShowSettings, setShowSearch, setShowGoToLine, setShowConfirmModal, isSlidesMode, handleNextSlide, handlePrevSlide]);
 
   return (
     <div className={`app-container ${isFullscreenMode ? 'fullscreen-mode' : ''}`}>
@@ -2221,7 +2333,8 @@ graph TD
             onExportHTML={handleExportHTML}
             onCopyHTML={handleCopyHTML}
             onFullscreen={handleToggleFullscreen}
-            onShare={handleShare}
+            onToggleSlides={handleToggleSlides}
+            onShare={handleOpenShareModal}
             exportMenuOpen={exportMenuOpen}
             onExportMenuToggle={handleExportMenuToggle}
             exportMenuPosition={exportMenuPosition}
@@ -2403,6 +2516,99 @@ graph TD
             position={emojiPickerPosition}
           />
         )}
+
+        {/* Slides Mode */}
+        {isSlidesMode && activeTab && (
+          <div className="presentation-overlay">
+            <div className="presentation-content">
+              <Preview
+                content={extractSlides(activeTab.content)[currentSlideIndex]}
+                syncScroll={false}
+                theme={theme}
+                scrollSource={null}
+              />
+            </div>
+            <div className="presentation-controls">
+              <button 
+                className="presentation-btn" 
+                onClick={handlePrevSlide}
+                disabled={currentSlideIndex === 0}
+              >
+                ← Anterior
+              </button>
+              <span className="presentation-counter">
+                {currentSlideIndex + 1} / {extractSlides(activeTab.content).length}
+              </span>
+              <button 
+                className="presentation-btn" 
+                onClick={handleNextSlide}
+                disabled={currentSlideIndex === extractSlides(activeTab.content).length - 1}
+              >
+                Próximo →
+              </button>
+              <button 
+                className="presentation-btn presentation-exit" 
+                onClick={handleToggleSlides}
+              >
+                Sair (ESC)
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Share Modal */}
+        {showShareModal && (
+          <div className="modal-overlay" onClick={() => setShowShareModal(false)}>
+            <div className="share-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Compartilhar via GitHub Gist</h2>
+                <button className="modal-close" onClick={() => setShowShareModal(false)}>
+                  ×
+                </button>
+              </div>
+              <div className="modal-body">
+                {!githubToken ? (
+                  <div className="share-warning">
+                    <p>Você precisa configurar um GitHub Personal Access Token nas Configurações para compartilhar.</p>
+                  </div>
+                ) : shareResult ? (
+                  <div className="share-success">
+                    <p>Gist criado com sucesso!</p>
+                    <a href={shareResult} target="_blank" rel="noopener noreferrer" className="share-link">
+                      {shareResult}
+                    </a>
+                    <button 
+                      className="btn btn-primary" 
+                      onClick={() => navigator.clipboard.writeText(shareResult)}
+                    >
+                      Copiar Link
+                    </button>
+                  </div>
+                ) : (
+                  <div className="share-options">
+                    <p>Escolha o tipo de compartilhamento:</p>
+                    <div className="share-buttons">
+                      <button 
+                        className="btn btn-primary" 
+                        onClick={() => handleShare(false)}
+                        disabled={isSharing}
+                      >
+                        {isSharing ? 'Criando...' : 'Gist Privado'}
+                      </button>
+                      <button 
+                        className="btn btn-secondary" 
+                        onClick={() => handleShare(true)}
+                        disabled={isSharing}
+                      >
+                        {isSharing ? 'Criando...' : 'Gist Público'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Status Bar */}
@@ -2448,6 +2654,7 @@ graph TD
             heading: () => handleHeading(2),
             code: handleCode,
             link: handleLink,
+            image: handleInsertImage,
             list: handleList,
             mermaid: () => handleMermaid('flowchart'),
             format: handleFormatDocument,

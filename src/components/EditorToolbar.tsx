@@ -1,4 +1,4 @@
-import { Code, Link, List, GitGraph, Edit, Columns, Eye, Bold, Italic, Heading, Smile, ChevronDown, PanelLeft, AlignLeft, Underline, WrapText, Image, Loader2, Download, FileText, FileType, Presentation, Copy, Share2 } from 'lucide-react';
+import { Code, Link, List, GitGraph, Edit, Columns, Eye, Bold, Italic, Heading, Smile, ChevronDown, PanelLeft, AlignLeft, Underline, WrapText, Image, Loader2, Download, FileText, FileType, Presentation, Copy, Share2, Play } from 'lucide-react';
 import { useRef } from 'react';
 
 interface EditorToolbarProps {
@@ -30,6 +30,7 @@ interface EditorToolbarProps {
   onExportHTML: () => void;
   onCopyHTML: () => void;
   onFullscreen: () => void;
+  onToggleSlides: () => void;
   onShare: () => void;
   exportMenuOpen: boolean;
   onExportMenuToggle: (e: React.MouseEvent) => void;
@@ -65,6 +66,7 @@ export function EditorToolbar({
   onExportHTML,
   onCopyHTML,
   onFullscreen,
+  onToggleSlides,
   onShare,
   exportMenuOpen,
   onExportMenuToggle,
@@ -189,11 +191,15 @@ export function EditorToolbar({
         )}
       </div>
 
+      <button className="toolbar-btn" onClick={onToggleSlides} title="Modo Slides">
+        <Play size={14} />
+        <span>Slides</span>
+      </button>
+
       <button className="toolbar-btn" onClick={onFullscreen} title="Modo Fullscreen">
         <Presentation size={14} />
         <span>Fullscreen</span>
       </button>
-
 
       <button 
         className={`toolbar-btn ${wordWrap ? 'active' : ''}`} 
