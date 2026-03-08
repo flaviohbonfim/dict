@@ -1,4 +1,4 @@
-import { Code, Link, List, GitGraph, Edit, Columns, Eye, Bold, Italic, Heading, Smile, ChevronDown, PanelLeft, AlignLeft, Underline, WrapText, Image, Loader2, Download, FileText, FileType, Presentation, Copy, Share2, Play } from 'lucide-react';
+import { Code, Link, List, GitGraph, Edit, Columns, Eye, Bold, Italic, Heading, Smile, ChevronDown, PanelLeft, AlignLeft, Underline, WrapText, Image, Loader2, Download, FileText, FileType, Presentation, Share2, Play } from 'lucide-react';
 import { useRef } from 'react';
 
 interface EditorToolbarProps {
@@ -28,7 +28,6 @@ interface EditorToolbarProps {
   isUploadingImage: boolean;
   onExportPDF: () => void;
   onExportHTML: () => void;
-  onCopyHTML: () => void;
   onFullscreen: () => void;
   onToggleSlides: () => void;
   onShare: () => void;
@@ -64,7 +63,6 @@ export function EditorToolbar({
   isUploadingImage,
   onExportPDF,
   onExportHTML,
-  onCopyHTML,
   onFullscreen,
   onToggleSlides,
   onShare,
@@ -177,10 +175,6 @@ export function EditorToolbar({
             <button className="submenu-item" onClick={onExportHTML}>
               <FileText size={14} />
               <span> Exportar como HTML</span>
-            </button>
-            <button className="submenu-item" onClick={onCopyHTML}>
-              <Copy size={14} />
-              <span> Copiar como HTML</span>
             </button>
             <div className="context-menu-divider" />
             <button className="submenu-item" onClick={onShare}>

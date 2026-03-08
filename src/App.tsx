@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Presentation, Loader2 } from 'lucide-react';
+import { Presentation, Loader2, X } from 'lucide-react';
 import { ActivityBar } from './components/ActivityBar';
 import { Sidebar } from './components/Sidebar';
 import { EditorToolbar } from './components/EditorToolbar';
@@ -562,7 +562,7 @@ function App() {
   const [isSlidesMode, setIsSlidesMode] = useState(false);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [isSharing, setIsSharing] = useState(false);
+  const [sharingType, setSharingType] = useState<'public' | 'private' | null>(null);
   const [shareResult, setShareResult] = useState<string | null>(null);
   const [editorScrollPercentage, setEditorScrollPercentage] = useState(0);
   // Search state
@@ -1847,7 +1847,7 @@ function App() {
       return;
     }
 
-    setIsSharing(true);
+    setSharingType(isPublic ? 'public' : 'private');
     setShareResult(null);
 
     try {
@@ -1883,7 +1883,7 @@ function App() {
       console.error('Erro ao criar Gist:', error);
       alert('Erro ao criar Gist: ' + (error instanceof Error ? error.message : 'Verifique seu token e conexão.'));
     } finally {
-      setIsSharing(false);
+      setSharingType(null);
     }
   };
 
@@ -2329,7 +2329,6 @@ graph TD
             isUploadingImage={isUploadingImage}
             onExportPDF={handleExportPDF}
             onExportHTML={handleExportHTML}
-            onCopyHTML={handleCopyHTML}
             onFullscreen={handleToggleFullscreen}
             onToggleSlides={handleToggleSlides}
             onShare={handleOpenShareModal}
@@ -2557,14 +2556,14 @@ graph TD
         {/* Share Modal */}
         {showShareModal && (
           <div className="modal-overlay" onClick={() => setShowShareModal(false)}>
-            <div className="share-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
+            <div className="share-modal confirm-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="confirm-modal-header">
                 <h3>Compartilhar via GitHub Gist</h3>
                 <button className="modal-close" onClick={() => setShowShareModal(false)}>
-                  ×
+                  <X size={18} />
                 </button>
               </div>
-              <div className="modal-body">
+              <div className="confirm-modal-body">
                 {!githubToken ? (
                   <div className="share-warning">
                     <p>Você precisa configurar um GitHub Personal Access Token nas Configurações para compartilhar.</p>
@@ -2595,23 +2594,25 @@ graph TD
                 ) : (
                   <div className="share-options">
                     <p>Escolha o tipo de compartilhamento para <strong>{activeFile?.name}</strong>:</p>
-                    <div className="share-buttons">
+                    <div className="share-info" style={{ marginTop: '8px', marginBottom: '16px' }}>
+                      <p>Gists privados não aparecem em buscas, mas qualquer pessoa com o link poderá visualizar.</p>
+                    </div>
+                    <div className="confirm-modal-footer" style={{ padding: 0, marginTop: '20px', justifyContent: 'center', background: 'none', borderTop: 'none' }}>
                       <button 
                         className="btn btn-secondary" 
                         onClick={() => handleShare(false)}
-                        disabled={isSharing}
+                        disabled={sharingType !== null}
                       >
-                        {isSharing ? <Loader2 size={14} className="animate-spin" /> : 'Gist Privado'}
+                        {sharingType === 'private' ? <Loader2 size={14} className="animate-spin" /> : 'Gist Privado'}
                       </button>
                       <button 
                         className="btn btn-primary" 
                         onClick={() => handleShare(true)}
-                        disabled={isSharing}
+                        disabled={sharingType !== null}
                       >
-                        {isSharing ? <Loader2 size={14} className="animate-spin" /> : 'Gist Público'}
+                        {sharingType === 'public' ? <Loader2 size={14} className="animate-spin" /> : 'Gist Público'}
                       </button>
                     </div>
-                    <p className="share-info">Gists privados não aparecem em buscas, mas qualquer pessoa com o link poderá visualizar.</p>
                   </div>
                 )}
               </div>
