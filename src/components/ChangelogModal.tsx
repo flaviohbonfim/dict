@@ -54,19 +54,21 @@ export function ChangelogModal({ onClose, changelog }: ChangelogModalProps) {
                   ) : (
                     <ChevronRight size={16} />
                   )}
-                  <h3 className="changelog-version">{version.title}</h3>
+                  <h3 className="changelog-version" dangerouslySetInnerHTML={{ __html: renderMarkdown(version.title) }}></h3>
                 </button>
                 
                 {openVersions[versionIndex] && (
                   <div className="changelog-version-content">
                     {version.sections.map((section, sectionIndex) => (
                       <div key={sectionIndex} className="changelog-section-block">
-                        <h4 className="changelog-section">{section.title}</h4>
+                        <h4 className="changelog-section" dangerouslySetInnerHTML={{ __html: renderMarkdown(section.title) }}></h4>
                         <ul className="changelog-list">
                           {section.items.map((item, itemIndex) => (
-                            <li key={itemIndex} className="changelog-item">
-                              {item}
-                            </li>
+                            <li 
+                              key={itemIndex} 
+                              className="changelog-item" 
+                              dangerouslySetInnerHTML={{ __html: renderMarkdown(item) }}
+                            />
                           ))}
                         </ul>
                       </div>
@@ -135,4 +137,16 @@ function parseChangelog(changelog: string): Version[] {
   }
   
   return versions;
+}
+
+function renderMarkdown(text: string): string {
+  if (!text) return '';
+  
+  return text
+    // Bold: **text**
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // Italic: *text*
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // Inline code: `code`
+    .replace(/`(.*?)`/g, '<code>$1</code>');
 }

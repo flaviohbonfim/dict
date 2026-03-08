@@ -2,7 +2,7 @@
 
 # dict - editor de markdown
 
-![Versão](https://img.shields.io/badge/versão-0.7.0-blue)
+![Versão](https://img.shields.io/badge/versão-0.8.0-blue)
 ![React](https://img.shields.io/badge/React-19.2.0-61dafb)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-3178c6)
 ![Vite](https://img.shields.io/badge/Vite-7.3.1-646cff)

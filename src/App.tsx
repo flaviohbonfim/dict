@@ -145,7 +145,26 @@ pie
 **Dica:** Use os atalhos de teclado para formatar seu texto mais rapidamente!
 `;
 
-const CHANGELOG = `## Versão 0.7.1 - Correções de UX e Modais
+const CHANGELOG = `## Versão 0.8.0 - Exportação, Compartilhamento e Edição Avançada
+
+### Exportação e Compartilhamento
+- **Exportar para PDF**: Gerar documentos PDF com melhorias de tema (Light/Nord) e quebra de página automática
+- **Exportar para HTML**: Exportação standalone com suporte total a diagramas Mermaid e Emojis
+- **Compartilhamento via Gist**: Upload direto para GitHub Gist (Público ou Privado) com geração automática de link
+
+### Melhorias no Editor
+- **Texto Sublinhado**: Suporte à tag <u> com atalho global Ctrl+U
+- **Quebra de Linha Automática**: Opção de Word Wrap para facilitar a leitura de textos longos
+- **Upload de Imagens**: Integração com ImgBB para inserção rápida de imagens via link Markdown
+
+### UX e Correções
+- Comportamento refinado de modais (fechamento sequencial com ESC)
+- Fechamento automático do painel de Configurações ao clicar fora
+- Correções de imports (Loader2) e limpeza de interface
+
+---
+
+## Versão 0.7.1 - Correções de UX e Modais
 
 ### Correções
 - Modais agora fecham na ordem correta (inversa à abertura) ao pressionar ESC

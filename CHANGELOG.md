@@ -7,6 +7,28 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [0.8.0] - 2026-03-08
+
+### 🚀 Exportação e Compartilhamento
+
+- **Exportar para PDF**: Agora com suporte aprimorado a temas (Light/Nord), controle de quebras de página e renderização fiel de diagramas.
+- **Exportar para HTML**: Nova opção de exportação standalone que preserva estilos, emojis e diagramas Mermaid.
+- **Compartilhamento via Gist**: Integração direta com a API do GitHub para criar Gists públicos ou privados instantaneamente.
+
+### 📝 Melhorias no Editor
+
+- **Texto Sublinhado**: Implementado suporte à tag `<u>` com botão na toolbar e atalho `Ctrl+U`.
+- **Quebra de Linha Automática**: Adicionado toggle de "Word Wrap" para melhor visualização de parágrafos longos.
+- **Upload de Imagens**: Integração com ImgBB permitindo o upload direto de arquivos locais para a nuvem.
+
+### ✨ UX & Correções
+
+- **Navegação de Modais**: Corrigida a lógica da pilha de modais ao usar a tecla ESC.
+- **Configurações Inteligentes**: O painel lateral agora se comporta como um modal, fechando ao clicar na área externa.
+- **Refatoração Interna**: Remoção de bugs de importação e otimização de renderização no preview.
+
+---
+
 ## [0.7.1] - 2026-03-07
 
 ### 🐛 Correções de UX e Modais
