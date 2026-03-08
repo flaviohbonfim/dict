@@ -63,7 +63,7 @@ export function SettingsPanel({
               onChange={(e) => onImgbbApiKeyChange(e.target.value)}
             />
             <p className="imgbb-help">
-              Obtain a free API key at <a href="https://api.imgbb.com/" target="_blank" rel="noopener noreferrer">imgbb.com</a>
+              Obtenha sua API Key em <a href="https://api.imgbb.com/" target="_blank" rel="noopener noreferrer">imgbb.com</a>
             </p>
           </div>
         </div>
@@ -71,7 +71,7 @@ export function SettingsPanel({
         <div className="settings-section">
           <h3>
             <Github size={16} />
-            GitHub (Gist)
+            GitHub Gist (Compartilhamento)
           </h3>
           <div className="imgbb-config">
             <input
@@ -82,7 +82,7 @@ export function SettingsPanel({
               onChange={(e) => onGithubTokenChange(e.target.value)}
             />
             <p className="imgbb-help">
-              Required for gist sharing. <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">Generate token</a> with 'gist' scope.
+              Necessário para compartilhar. <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">Gerar token</a> com escopo 'gist'.
             </p>
           </div>
         </div>
@@ -148,65 +148,7 @@ export function SettingsPanel({
           </div>
         </div>
 
-        <div className="settings-section">
-          <h3>
-            <Github size={16} />
-            GitHub Gist (Compartilhamento)
-          </h3>
-          <div className="theme-options">
-            <div className="settings-input-group" style={{ width: '100%', padding: '0 8px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                Personal Access Token (com escopo 'gist')
-              </div>
-              <input
-                type="password"
-                className="settings-text-input"
-                style={{
-                  width: '100%',
-                  background: 'var(--bg-tertiary)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '4px',
-                  padding: '8px 12px',
-                  color: 'var(--text-primary)',
-                  fontSize: '13px'
-                }}
-                value={githubToken}
-                onChange={(e) => onGithubTokenChange(e.target.value)}
-                placeholder="ghp_..."
-              />
-            </div>
-          </div>
-        </div>
 
-        <div className="settings-section">
-          <h3>
-            <Image size={16} />
-            Upload de Imagens
-          </h3>
-          <div className="theme-options">
-            <div className="settings-input-group" style={{ width: '100%', padding: '0 8px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                API Key do ImgBB (obtenha em imgbb.com)
-              </div>
-              <input
-                type="password"
-                className="settings-text-input"
-                style={{
-                  width: '100%',
-                  background: 'var(--bg-tertiary)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '4px',
-                  padding: '8px 12px',
-                  color: 'var(--text-primary)',
-                  fontSize: '13px'
-                }}
-                value={imgbbApiKey}
-                onChange={(e) => onImgbbApiKeyChange(e.target.value)}
-                placeholder="Insira sua API Key..."
-              />
-            </div>
-          </div>
-        </div>
 
         <div className="settings-section">
           <h3>

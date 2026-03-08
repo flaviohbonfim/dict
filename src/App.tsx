@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Presentation } from 'lucide-react';
+import { Presentation, Loader2 } from 'lucide-react';
 import { ActivityBar } from './components/ActivityBar';
 import { Sidebar } from './components/Sidebar';
 import { EditorToolbar } from './components/EditorToolbar';
@@ -1626,6 +1626,7 @@ function App() {
   };
 
   const handleExportPDF = async () => {
+    setExportMenuOpen(false);
     console.log('[PDF EXPORT] Initiated');
     if (!activeTab) {
       console.warn('[PDF EXPORT] No active tab to export.');
@@ -1838,7 +1839,7 @@ function App() {
   };
 
   const handleShare = async (isPublic: boolean = true) => {
-    if (!activeTab) return;
+    if (!activeTab || !activeFile) return;
     
     if (!githubToken) {
       alert('Por favor, configure seu GitHub Token nas configurações para criar um Gist.');
@@ -1858,10 +1859,10 @@ function App() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          description: `Documento compartilhado via dict: ${activeTab.name}`,
+          description: `Documento compartilhado via dict: ${activeFile.name}`,
           public: isPublic,
           files: {
-            [activeTab.name.endsWith('.md') ? activeTab.name : `${activeTab.name}.md`]: {
+            [activeFile.name.endsWith('.md') ? activeFile.name : `${activeFile.name}.md`]: {
               content: activeTab.content
             }
           }
@@ -1869,7 +1870,8 @@ function App() {
       });
 
       if (!response.ok) {
-        throw new Error(`Erro API GitHub: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Erro API GitHub: ${response.status}`);
       }
 
       const data = await response.json();
@@ -1877,20 +1879,16 @@ function App() {
       
       setShareResult(gistUrl);
       await navigator.clipboard.writeText(gistUrl);
-      // Solo alertar si no estamos en el modal de compartir
-      if (!showShareModal) {
-        alert('Gist criado com sucesso! O link foi copiado para a área de transferência.');
-        setExportMenuOpen(false);
-      }
     } catch (error) {
       console.error('Erro ao criar Gist:', error);
-      alert('Erro ao criar Gist. Verifique seu token e conexão.');
+      alert('Erro ao criar Gist: ' + (error instanceof Error ? error.message : 'Verifique seu token e conexão.'));
     } finally {
       setIsSharing(false);
     }
   };
 
   const handleOpenShareModal = () => {
+    setExportMenuOpen(false);
     setShowShareModal(true);
     setShareResult(null);
   };
@@ -2561,7 +2559,7 @@ graph TD
           <div className="modal-overlay" onClick={() => setShowShareModal(false)}>
             <div className="share-modal" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>Compartilhar via GitHub Gist</h2>
+                <h3>Compartilhar via GitHub Gist</h3>
                 <button className="modal-close" onClick={() => setShowShareModal(false)}>
                   ×
                 </button>
@@ -2570,39 +2568,50 @@ graph TD
                 {!githubToken ? (
                   <div className="share-warning">
                     <p>Você precisa configurar um GitHub Personal Access Token nas Configurações para compartilhar.</p>
+                    <button className="btn btn-primary" style={{ marginTop: '12px' }} onClick={() => { setShowShareModal(false); setShowSettings(true); }}>
+                      Abrir Configurações
+                    </button>
                   </div>
                 ) : shareResult ? (
                   <div className="share-success">
+                    <div className="success-icon">✓</div>
                     <p>Gist criado com sucesso!</p>
-                    <a href={shareResult} target="_blank" rel="noopener noreferrer" className="share-link">
-                      {shareResult}
+                    <div className="share-link-container">
+                      <input type="text" readOnly value={shareResult} className="share-link-input" />
+                      <button 
+                        className="btn btn-primary" 
+                        onClick={() => {
+                          navigator.clipboard.writeText(shareResult);
+                          // Poderíamos adicionar um estado de feedback aqui
+                        }}
+                      >
+                        Copiar
+                      </button>
+                    </div>
+                    <a href={shareResult} target="_blank" rel="noopener noreferrer" className="view-link">
+                      Visualizar no GitHub
                     </a>
-                    <button 
-                      className="btn btn-primary" 
-                      onClick={() => navigator.clipboard.writeText(shareResult)}
-                    >
-                      Copiar Link
-                    </button>
                   </div>
                 ) : (
                   <div className="share-options">
-                    <p>Escolha o tipo de compartilhamento:</p>
+                    <p>Escolha o tipo de compartilhamento para <strong>{activeFile?.name}</strong>:</p>
                     <div className="share-buttons">
                       <button 
-                        className="btn btn-primary" 
+                        className="btn btn-secondary" 
                         onClick={() => handleShare(false)}
                         disabled={isSharing}
                       >
-                        {isSharing ? 'Criando...' : 'Gist Privado'}
+                        {isSharing ? <Loader2 size={14} className="animate-spin" /> : 'Gist Privado'}
                       </button>
                       <button 
-                        className="btn btn-secondary" 
+                        className="btn btn-primary" 
                         onClick={() => handleShare(true)}
                         disabled={isSharing}
                       >
-                        {isSharing ? 'Criando...' : 'Gist Público'}
+                        {isSharing ? <Loader2 size={14} className="animate-spin" /> : 'Gist Público'}
                       </button>
                     </div>
+                    <p className="share-info">Gists privados não aparecem em buscas, mas qualquer pessoa com o link poderá visualizar.</p>
                   </div>
                 )}
               </div>

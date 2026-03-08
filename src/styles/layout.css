@@ -2011,29 +2011,82 @@
 .share-modal {
   background-color: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
   width: 90%;
-  max-width: 500px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  max-width: 480px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  animation: modalEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalEnter {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.share-modal .modal-body {
+  padding: 24px;
 }
 
 .share-warning {
-  padding: 20px;
   text-align: center;
   color: var(--text-secondary);
+}
+
+.share-warning p {
+  margin-bottom: 16px;
+  line-height: 1.5;
 }
 
 .share-success {
   display: flex;
   flex-direction: column;
-  gap: 16px;
   align-items: center;
+  gap: 16px;
+  text-align: center;
 }
 
-.share-link {
+.success-icon {
+  width: 48px;
+  height: 48px;
+  background-color: #22c55e;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-bottom: 8px;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+}
+
+.share-link-container {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.share-link-input {
+  flex: 1;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  outline: none;
+}
+
+.view-link {
   color: var(--accent);
-  word-break: break-all;
-  text-align: center;
+  text-decoration: none;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.view-link:hover {
+  text-decoration: underline;
 }
 
 .share-options {
@@ -2049,6 +2102,15 @@
   display: flex;
   gap: 12px;
   justify-content: center;
+  margin-bottom: 20px;
+}
+
+.share-info {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-top: 16px;
+  font-style: italic;
 }
 
 /* Responsividade */
